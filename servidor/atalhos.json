@@ -1,0 +1,10 @@
+[
+  {"nome": "YouTube", "alvo": "https://www.youtube.com"},
+  {"nome": "Spotify", "alvo": "spotify:"},
+  {"nome": "Discord", "alvo": "app:Discord"},
+  {"nome": "Firefox", "alvo": "app:Firefox"},
+  {"nome": "Steam", "alvo": "app:Steam"},
+  {"nome": "Valorant", "alvo": "app:Valorant"},
+  {"nome": "PyCharm", "alvo": "app:PyCharm"},
+  {"nome": "Claude", "alvo": "app:Claude"}
+]

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icone.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Controle do PC</title>
+<style>
+:root{color-scheme:dark;--bg:#0a0a0b;--card:#141416;--btn:#1e1e22;--btn2:#2b2b31;--ink:#f2f2f3;--muted:#8b8b94;--line:#33333a;--accent:#e5202e;--on:#fff;--danger:#ff4d58;--dbg:#241214;--ok:#33d17a;--shadow:none}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;padding:max(20px,env(safe-area-inset-top)) 18px calc(104px + env(safe-area-inset-bottom))}
+main{max-width:520px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 20px}
+h1{font-size:1.6rem;margin:0;font-weight:700;letter-spacing:-.02em}
+#estado{font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:7px}
+#estado::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--line)}
+#estado.on::before{background:var(--ok)}
+.aba{display:none}.aba.ativa{display:block}
+section{background:var(--card);border-radius:24px;padding:18px;margin-bottom:16px;box-shadow:var(--shadow)}
+h2{font-size:.85rem;margin:0 0 14px;color:var(--muted);font-weight:600;letter-spacing:.03em}
+.grade{display:grid;gap:10px;margin-bottom:10px}.grade:last-child{margin-bottom:0}
+.c2{grid-template-columns:1fr 1fr}.c3{grid-template-columns:repeat(3,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
+button{font:inherit;font-weight:500;min-height:56px;border-radius:16px;border:0;background:var(--btn);color:var(--ink);padding:8px;touch-action:manipulation;cursor:pointer;transition:background .15s,transform .1s}
+button:active{transform:scale(.97);background:var(--btn2)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.perigo{color:var(--danger);background:var(--dbg);box-shadow:inset 0 0 0 1.5px var(--danger)}
+.perigo.armado{background:var(--danger);color:var(--card)}
+.destaque{background:var(--accent);color:var(--on)}
+.destaque:active{background:var(--accent);opacity:.85}
+.fraco{min-height:44px;width:100%;background:transparent;font-size:.9rem;color:var(--muted);font-weight:400}
+.texto{display:flex;gap:10px;margin-bottom:10px}
+input,textarea{font:inherit;color:var(--ink);background:var(--btn);border:0;border-radius:16px;padding:0 16px;min-height:56px;min-width:0}
+.texto input{flex:1}
+.texto button{padding:8px 20px}
+textarea{width:100%;min-height:96px;padding:14px 16px;margin-bottom:10px;resize:vertical}
+input[type=range]{width:100%;min-height:44px;padding:0;background:none;accent-color:var(--accent)}
+.rotulo{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem}
+.med{height:8px;border-radius:4px;background:var(--btn);overflow:hidden;margin-bottom:14px}.med:last-child{margin-bottom:0}
+.med i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .4s}
+.mesa{display:flex;gap:10px;margin-bottom:10px}
+.area{height:220px;border-radius:18px;background:var(--btn);touch-action:none;display:grid;place-items:center;text-align:center;padding:12px;color:var(--muted);font-size:.9rem;user-select:none}
+#pad{flex:1}.faixa{width:58px;flex:none;padding:0}
+#tela{width:100%;border-radius:16px;display:none;background:#000;margin-bottom:10px}
+#abas{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(calc(100% - 36px),400px);display:flex;gap:4px;padding:6px;border-radius:24px;background:var(--card);box-shadow:0 2px 6px rgba(20,37,42,.12),0 10px 28px rgba(20,37,42,.14);z-index:5}
+#abas button{flex:1;min-height:48px;border-radius:18px;background:transparent;color:var(--muted)}
+#abas button.on{background:var(--accent);color:var(--on);box-shadow:0 0 18px rgba(229,32,46,.4)}
+#toast{position:fixed;left:18px;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));max-width:484px;margin:0 auto;padding:13px 16px;border-radius:16px;background:var(--btn2);color:var(--ink);opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;pointer-events:none;text-align:center;z-index:6}
+#toast.show{opacity:1;transform:none}
+#toast.erro{background:var(--danger);color:var(--card)}
+dialog{border:0;border-radius:24px;padding:22px;width:min(92vw,420px);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,22,.55)}
+dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Controle do PC</h1>
+    <span id="estado">Sem conexão</span>
+  </header>
+
+  <div class="aba ativa" id="aba-inicio">
+  <section>
+    <h2>Energia</h2>
+    <div class="grade c2">
+      <button class="perigo" data-rota="desligar" data-rotulo="Desligar" data-confirmar>Desligar</button>
+      <button class="perigo" data-rota="reiniciar" data-rotulo="Reiniciar" data-confirmar>Reiniciar</button>
+      <button data-rota="bloquear">Bloquear</button>
+      <button data-rota="suspender">Suspender</button>
+    </div>
+    <div class="grade c3">
+      <button data-min="30">Em 30 min</button>
+      <button data-min="60">Em 1 h</button>
+      <button data-min="120">Em 2 h</button>
+    </div>
+    <button class="fraco" data-rota="cancelar">Cancelar desligamento</button>
+  </section>
+
+  <section>
+    <h2>Mídia</h2>
+    <div class="rotulo"><span>Volume</span><span id="volTxt">—</span></div>
+    <input type="range" id="vol" min="0" max="100" aria-label="Volume">
+    <div class="grade c3">
+      <button data-tecla="volume_menos">Volume −</button>
+      <button data-tecla="mudo">Mudo</button>
+      <button data-tecla="volume_mais">Volume +</button>
+    </div>
+    <div class="grade c3">
+      <button data-tecla="anterior">Anterior</button>
+      <button class="destaque" data-tecla="play_pause">Play / Pausa</button>
+      <button data-tecla="proxima">Próxima</button>
+    </div>
+  </section>
+  </div>
+
+  <div class="aba" id="aba-controle">
+  <section>
+    <h2>Mouse</h2>
+    <div class="mesa">
+      <div class="area" id="pad">Deslize para mover. Toque para clicar.</div>
+      <div class="area faixa" id="faixa" aria-label="Rolagem">Rolar</div>
+    </div>
+    <div class="grade c3">
+      <button data-mouse="esquerdo">Clique</button>
+      <button data-mouse="duplo">Duplo</button>
+      <button data-mouse="direito">Direito</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Teclado</h2>
+    <form class="texto" id="formTexto">
+      <input id="texto" type="text" placeholder="Texto para digitar no PC" autocomplete="off" autocapitalize="off" autocorrect="off">
+      <button type="submit" class="destaque">Digitar</button>
+    </form>
+    <div class="grade c3">
+      <button data-tecla="enter">Enter</button>
+      <button data-tecla="esc">Esc</button>
+      <button data-tecla="apagar">Apagar</button>
+    </div>
+    <div class="grade c4">
+      <button data-tecla="esquerda" aria-label="Seta para a esquerda">←</button>
+      <button data-tecla="cima" aria-label="Seta para cima">↑</button>
+      <button data-tecla="baixo" aria-label="Seta para baixo">↓</button>
+      <button data-tecla="direita" aria-label="Seta para a direita">→</button>
+    </div>
+    <div class="grade c2">
+      <button data-tecla="tab">Tab</button>
+      <button data-tecla="espaco">Espaço</button>
+    </div>
+  </section>
+  </div>
+
+  <div class="aba" id="aba-mais">
+  <section>
+    <h2>Atalhos</h2>
+    <div class="grade c2" id="atalhos"></div>
+  </section>
+
+  <section>
+    <h2>Enviar para o PC</h2>
+    <textarea id="area" placeholder="Texto ou link para o PC"></textarea>
+    <div class="grade c2">
+      <button id="copiar">Copiar no PC</button>
+      <button id="colar" class="destaque">Copiar e colar</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tela do PC</h2>
+    <img id="tela" alt="Captura da tela do PC">
+    <div class="grade c2">
+      <button id="verTela">Atualizar</button>
+      <button id="autoTela">Auto: desligado</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Status do PC</h2>
+    <div id="status"></div>
+  </section>
+  </div>
+</main>
+
+<nav id="abas" aria-label="Seções">
+  <button class="on" data-aba="inicio">Início</button>
+  <button data-aba="controle">Controle</button>
+  <button data-aba="mais">Mais</button>
+</nav>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="dlg">
+  <form id="formToken">
+    <p id="dlgMsg"></p>
+    <input id="token" type="text" placeholder="Token" autocomplete="off" autocapitalize="off" autocorrect="off">
+    <button type="submit" class="destaque">Entrar</button>
+  </form>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+let token = localStorage.getItem('token') || '';
+
+function aviso(msg, erro) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show' + (erro ? ' erro' : '');
+  clearTimeout(aviso.t);
+  aviso.t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function estado(on) {
+  const e = $('#estado');
+  e.textContent = on ? 'Conectado' : 'Sem conexão';
+  e.classList.toggle('on', on);
+}
+
+function pedirToken(msg) {
+  $('#dlgMsg').textContent = msg || 'Digite o token que aparece na tela do PC quando o servidor inicia.';
+  if (!$('#dlg').open) $('#dlg').showModal();
+  $('#token').focus();
+}
+
+async function enviar(rota, corpo, silencioso) {
+  if (!token) { pedirToken(); return false; }
+  try {
+    const r = await fetch('/api/' + rota, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Token': token},
+      body: JSON.stringify(corpo || {})
+    });
+    if (r.status === 401) {
+      localStorage.removeItem('token'); token = ''; estado(false);
+      pedirToken('Token incorreto. Digite de novo.');
+      return false;
+    }
+    const d = await r.json();
+    estado(r.ok);
+    if (!silencioso || !r.ok) aviso(d.msg, !r.ok);
+    return r.ok;
+  } catch (e) {
+    estado(false);
+    aviso('PC sem resposta. Confira o Wi-Fi e se o servidor está aberto.', true);
+    return false;
+  }
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button[data-rota], button[data-tecla]');
+  if (!b) return;
+  if (b.dataset.confirmar) {
+    if (!b.classList.contains('armado')) {
+      b.classList.add('armado');
+      b.textContent = 'Toque de novo';
+      b._t = setTimeout(() => { b.classList.remove('armado'); b.textContent = b.dataset.rotulo; }, 3000);
+      return;
+    }
+    clearTimeout(b._t);
+    b.classList.remove('armado');
+    b.textContent = b.dataset.rotulo;
+  }
+  if (b.dataset.rota) enviar(b.dataset.rota);
+  else enviar('tecla', {tecla: b.dataset.tecla}, true);
+});
+
+$('#formTexto').addEventListener('submit', async e => {
+  e.preventDefault();
+  const campo = $('#texto');
+  if (!campo.value) return;
+  if (await enviar('texto', {texto: campo.value})) campo.value = '';
+});
+
+$('#formToken').addEventListener('submit', e => {
+  e.preventDefault();
+  const valor = $('#token').value.trim();
+  if (!valor) return;
+  token = valor;
+  localStorage.setItem('token', token);
+  $('#token').value = '';
+  $('#dlg').close();
+  iniciar();
+});
+
+if (token) iniciar(); else pedirToken();
+
+function dados(rota, corpo) {
+  return fetch('/api/' + rota, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Token': token}, body: JSON.stringify(corpo || {})})
+    .then(r => r.ok ? r.json() : null).catch(() => null);
+}
+
+const mouse = c => enviar('mouse', c, true);
+const pad = $('#pad'), faixa = $('#faixa');
+let prev = null, acum = {x: 0, y: 0}, ultimo = 0, toque = {t: 0, mov: 0};
+function enviarMouse() {
+  const x = Math.round(acum.x), y = Math.round(acum.y);
+  acum.x -= x; acum.y -= y;
+  if (x || y) mouse({mover: [x, y]});
+}
+pad.addEventListener('pointerdown', e => { pad.setPointerCapture(e.pointerId); prev = [e.clientX, e.clientY]; toque = {t: Date.now(), mov: 0}; });
+pad.addEventListener('pointermove', e => {
+  if (!prev) return;
+  const dx = e.clientX - prev[0], dy = e.clientY - prev[1];
+  prev = [e.clientX, e.clientY];
+  toque.mov += Math.abs(dx) + Math.abs(dy);
+  acum.x += dx * 1.8; acum.y += dy * 1.8;
+  if (Date.now() - ultimo > 40) { ultimo = Date.now(); enviarMouse(); }
+});
+pad.addEventListener('pointerup', () => {
+  if (!prev) return;
+  prev = null; enviarMouse();
+  if (toque.mov < 6 && Date.now() - toque.t < 250) mouse({clique: 'esquerdo'});
+});
+pad.addEventListener('pointercancel', () => { prev = null; });
+
+let fy = null, fa = 0;
+faixa.addEventListener('pointerdown', e => { faixa.setPointerCapture(e.pointerId); fy = e.clientY; });
+faixa.addEventListener('pointermove', e => {
+  if (fy === null) return;
+  fa += (e.clientY - fy) / 12; fy = e.clientY;
+  const n = Math.trunc(fa);
+  if (n) { fa -= n; mouse({rolar: n}); }
+});
+faixa.addEventListener('pointerup', () => { fy = null; });
+
+document.addEventListener('click', e => {
+  const m = e.target.closest('[data-mouse]'); if (m) mouse({clique: m.dataset.mouse});
+  const t = e.target.closest('[data-min]'); if (t) enviar('desligar_em', {min: +t.dataset.min});
+});
+
+let volT;
+$('#vol').addEventListener('input', e => {
+  $('#volTxt').textContent = e.target.value + '%';
+  clearTimeout(volT);
+  volT = setTimeout(() => dados('volume', {nivel: +e.target.value}), 120);
+});
+
+$('#atalhos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) enviar('abrir', {i: +b.dataset.i}); });
+$('#copiar').onclick = () => enviar('area', {texto: $('#area').value});
+$('#colar').onclick = () => enviar('area', {texto: $('#area').value, colar: true});
+
+async function capturar() {
+  try {
+    const r = await fetch('/api/tela', {method: 'POST', headers: {'X-Token': token}});
+    if (!r.ok) { aviso('Não foi possível capturar a tela', true); return; }
+    const img = $('#tela'), antigo = img.src;
+    img.src = URL.createObjectURL(await r.blob());
+    img.style.display = 'block';
+    if (antigo.startsWith('blob:')) URL.revokeObjectURL(antigo);
+  } catch (e) { aviso('PC sem resposta', true); }
+}
+let telaAuto = null;
+$('#verTela').onclick = capturar;
+$('#autoTela').onclick = e => {
+  if (telaAuto) { clearInterval(telaAuto); telaAuto = null; e.target.textContent = 'Auto: desligado'; return; }
+  capturar();
+  telaAuto = setInterval(() => { if (!document.hidden) capturar(); }, 3000);
+  e.target.textContent = 'Auto: ligado';
+};
+
+const ROTULOS = [['cpu', 'Processador'], ['ram', 'Memória'], ['disco', 'Disco']];
+$('#status').innerHTML = ROTULOS.map(([k, n]) =>
+  `<div class="rotulo"><span>${n}</span><span id="t-${k}">—</span></div><div class="med"><i id="b-${k}" style="width:0"></i></div>`).join('');
+
+async function atualizarStatus() {
+  const s = await dados('status');
+  if (!s) return;
+  for (const [k] of ROTULOS) { $('#t-' + k).textContent = Math.round(s[k]) + '%'; $('#b-' + k).style.width = s[k] + '%'; }
+}
+
+async function iniciar() {
+  if (!await enviar('ping', {}, true)) return;
+  const a = await dados('atalhos');
+  if (a) $('#atalhos').replaceChildren(...a.itens.map((n, i) => { const b = document.createElement('button'); b.textContent = n; b.dataset.i = i; return b; }));
+  const v = await dados('volume');
+  if (v) { $('#vol').value = v.nivel; $('#volTxt').textContent = v.nivel + '%'; }
+  atualizarStatus();
+  if (!iniciar.loop) iniciar.loop = setInterval(() => { if (!document.hidden) atualizarStatus(); }, 5000);
+}
+
+document.querySelectorAll('#abas button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.aba').forEach(a => a.classList.toggle('ativa', a.id === 'aba-' + b.dataset.aba));
+  document.querySelectorAll('#abas button').forEach(x => x.classList.toggle('on', x === b));
+  window.scrollTo(0, 0);
+});
+</script>
+</body>
+</html>

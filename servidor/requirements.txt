@@ -1,0 +1,6 @@
+flask
+pynput
+psutil
+pillow
+pyperclip
+pycaw==20240210

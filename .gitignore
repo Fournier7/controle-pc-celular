@@ -1,0 +1,19 @@
+# Segredos e arquivos locais
+token.txt
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Android / Gradle
+local.properties
+.gradle/
+build/
+.idea/
+*.iml
+*.apk
+
+# Sistema
+.DS_Store
+Thumbs.db
