@@ -1,0 +1,6 @@
+[
+  {"nome": "Jogar", "passos": [{"abrir": "app:Riot Client"}, {"abrir": "app:Discord"}]},
+  {"nome": "Programar", "passos": [{"abrir": "app:Firefox"}, {"abrir": "app:PyCharm"}, {"abrir": "app:Claude"}]},
+  {"nome": "Filme", "passos": [{"abrir": "app:Firefox"}, {"volume": 30}]},
+  {"nome": "Dormir", "passos": [{"volume": 15}, {"desligar_em": 30}]}
+]

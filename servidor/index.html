@@ -56,6 +56,11 @@ dialog{border:0;border-radius:24px;padding:22px;width:min(92vw,420px);background
 dialog::backdrop{background:rgba(10,20,22,.55)}
 dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.dica{margin:10px 2px 0;font-size:.82rem;color:var(--muted);line-height:1.4}
+.tocando{display:flex;gap:12px;align-items:center}
+.tocando img{width:64px;height:64px;border-radius:12px;object-fit:cover}
+.tocando b{display:block}.tocando span{color:var(--muted);font-size:.9rem}
+#appsAudio>div{margin-bottom:8px}
 </style>
 </head>
 <body>
@@ -97,6 +102,31 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
       <button data-tecla="proxima">Próxima</button>
     </div>
   </section>
+
+  <section>
+    <h2>Tocando agora</h2>
+    <div class="tocando">
+      <img id="tcCapa" alt="Capa do álbum" style="display:none">
+      <div><b id="tcTitulo">Nada tocando</b><span id="tcArtista"></span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Microfone e Discord</h2>
+    <div class="grade">
+      <button id="micBtn">Microfone: verificando...</button>
+    </div>
+    <div class="grade c2">
+      <button id="dcMutar">Discord: mutar</button>
+      <button id="dcSurdo">Discord: ensurdecer</button>
+    </div>
+    <p class="dica">O botão do microfone silencia o microfone do Windows para todos os programas. Os botões do Discord usam os atalhos Ctrl+Shift+Alt+M (mutar) e Ctrl+Shift+Alt+D (ensurdecer) configurados no Discord.</p>
+  </section>
+
+  <section>
+    <h2>Modos</h2>
+    <div class="grade c2" id="modos"></div>
+  </section>
   </div>
 
   <div class="aba" id="aba-controle">
@@ -135,9 +165,36 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
       <button data-tecla="espaco">Espaço</button>
     </div>
   </section>
+
+  <section>
+    <h2>Atalhos de teclado</h2>
+    <div class="grade c3">
+      <button data-combo="alt_tab">Alt+Tab</button>
+      <button data-combo="area_trabalho">Área de trabalho</button>
+      <button class="perigo" data-combo="fechar_janela" data-rotulo="Fechar janela" data-confirmar>Fechar janela</button>
+      <button data-combo="captura">Captura de tela</button>
+      <button data-combo="tela_cheia">Tela cheia</button>
+      <button data-combo="gerenciador">Gerenc. de tarefas</button>
+      <button data-combo="copiar">Copiar</button>
+      <button data-combo="colar">Colar</button>
+      <button data-combo="desfazer">Desfazer</button>
+    </div>
+  </section>
   </div>
 
   <div class="aba" id="aba-mais">
+  <section>
+    <h2>Volume por programa</h2>
+    <div id="appsAudio"></div>
+    <button class="fraco" id="atualizarApps">Atualizar lista</button>
+  </section>
+
+  <section>
+    <h2>Saída de áudio</h2>
+    <div class="grade" id="saidas"></div>
+    <p class="dica" id="saidasMsg"></p>
+  </section>
+
   <section>
     <h2>Atalhos</h2>
     <div class="grade c2" id="atalhos"></div>
@@ -233,7 +290,7 @@ async function enviar(rota, corpo, silencioso) {
 }
 
 document.addEventListener('click', e => {
-  const b = e.target.closest('button[data-rota], button[data-tecla]');
+  const b = e.target.closest('button[data-rota], button[data-tecla], button[data-combo]');
   if (!b) return;
   if (b.dataset.confirmar) {
     if (!b.classList.contains('armado')) {
@@ -247,6 +304,7 @@ document.addEventListener('click', e => {
     b.textContent = b.dataset.rotulo;
   }
   if (b.dataset.rota) enviar(b.dataset.rota);
+  else if (b.dataset.combo) enviar('combo', {nome: b.dataset.combo}, true);
   else enviar('tecla', {tecla: b.dataset.tecla}, true);
 });
 
@@ -361,7 +419,12 @@ async function iniciar() {
   const v = await dados('volume');
   if (v) { $('#vol').value = v.nivel; $('#volTxt').textContent = v.nivel + '%'; }
   atualizarStatus();
-  if (!iniciar.loop) iniciar.loop = setInterval(() => { if (!document.hidden) atualizarStatus(); }, 5000);
+  atualizarMic(false);
+  atualizarTocando();
+  carregarModos();
+  carregarApps();
+  carregarSaidas();
+  if (!iniciar.loop) iniciar.loop = setInterval(() => { if (!document.hidden) { atualizarStatus(); atualizarTocando(); } }, 5000);
 }
 
 document.querySelectorAll('#abas button').forEach(b => b.onclick = () => {
@@ -369,6 +432,64 @@ document.querySelectorAll('#abas button').forEach(b => b.onclick = () => {
   document.querySelectorAll('#abas button').forEach(x => x.classList.toggle('on', x === b));
   window.scrollTo(0, 0);
 });
+
+async function atualizarMic(alternar) {
+  const d = await dados('microfone', {acao: alternar ? 'alternar' : 'estado'});
+  if (!d) { if (alternar) aviso('Não consegui mudar o microfone', true); return; }
+  const b = $('#micBtn');
+  b.textContent = d.mudo ? 'Microfone mutado (toque para ligar)' : 'Microfone ligado (toque para mutar)';
+  b.classList.toggle('perigo', d.mudo);
+  if (alternar) aviso(d.msg);
+}
+$('#micBtn').onclick = () => atualizarMic(true);
+$('#dcMutar').onclick = () => enviar('discord', {acao: 'mutar'});
+$('#dcSurdo').onclick = () => enviar('discord', {acao: 'ensurdecer'});
+
+let ultimaFaixa = '';
+async function atualizarTocando() {
+  const d = await dados('tocando', {capa: false});
+  if (!d) { $('#tcTitulo').textContent = 'Indisponível'; $('#tcArtista').textContent = 'Instale os pacotes winrt (veja o LEIAME)'; return; }
+  const id = d.titulo + '|' + d.artista;
+  if (id !== ultimaFaixa) {
+    ultimaFaixa = id;
+    const c = d.titulo ? await dados('tocando', {capa: true}) : null;
+    const img = $('#tcCapa');
+    if (c && c.capa) { img.src = 'data:image/jpeg;base64,' + c.capa; img.style.display = 'block'; } else img.style.display = 'none';
+  }
+  $('#tcTitulo').textContent = d.titulo || 'Nada tocando';
+  $('#tcArtista').textContent = d.artista ? d.artista + (d.tocando ? '' : ' (pausado)') : '';
+}
+
+async function carregarModos() {
+  const d = await dados('modos');
+  if (d) $('#modos').replaceChildren(...d.itens.map((n, i) => { const b = document.createElement('button'); b.textContent = n; b.dataset.modo = i; return b; }));
+}
+$('#modos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) enviar('modo', {i: +b.dataset.modo}); });
+
+async function carregarApps() {
+  const d = await dados('apps_audio');
+  const box = $('#appsAudio');
+  if (!d) { box.textContent = 'Não consegui ler os programas de áudio.'; return; }
+  if (!d.itens.length) { box.textContent = 'Nenhum programa com áudio aberto agora.'; return; }
+  box.replaceChildren(...d.itens.map(a => {
+    const linha = document.createElement('div'), rot = document.createElement('div');
+    const nome = document.createElement('span'), pct = document.createElement('span');
+    rot.className = 'rotulo'; nome.textContent = a.nome.replace(/\.exe$/i, ''); pct.textContent = a.nivel + '%';
+    rot.append(nome, pct);
+    const r = document.createElement('input'); r.type = 'range'; r.min = 0; r.max = 100; r.value = a.nivel;
+    let t; r.oninput = () => { pct.textContent = r.value + '%'; clearTimeout(t); t = setTimeout(() => dados('apps_audio', {nome: a.nome, nivel: +r.value}), 120); };
+    linha.append(rot, r);
+    return linha;
+  }));
+}
+$('#atualizarApps').onclick = carregarApps;
+
+async function carregarSaidas(id) {
+  const d = await dados('saidas', id ? {id: id} : {});
+  if (!d) { $('#saidasMsg').textContent = 'Instale o módulo AudioDeviceCmdlets (veja o LEIAME).'; return; }
+  $('#saidasMsg').textContent = '';
+  $('#saidas').replaceChildren(...d.itens.map(s => { const b = document.createElement('button'); b.textContent = s.nome; if (s.atual) b.className = 'destaque'; b.onclick = () => carregarSaidas(s.id); return b; }));
+}
 </script>
 </body>
 </html>

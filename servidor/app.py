@@ -1,3 +1,5 @@
+import asyncio
+import base64
 import hmac
 import io
 import json
@@ -6,6 +8,7 @@ import os
 import secrets
 import socket
 import subprocess
+import threading
 import time
 from pathlib import Path
 
@@ -18,8 +21,14 @@ from comtypes import CLSCTX_ALL
 from flask import Flask, Response, abort, jsonify, request, send_from_directory
 from PIL import ImageGrab
 from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
-from pynput.keyboard import Controller, Key
+from pynput.keyboard import Controller, Key, KeyCode
 from pynput.mouse import Button, Controller as Mouse
+
+def vk(letra):
+    """Letra enviada como tecla de verdade (código virtual), e não como texto.
+    Atalhos de outros programas só reconhecem assim."""
+    return KeyCode.from_vk(ord(letra.upper()))
+
 
 PORTA = 5000
 REDE_TAILSCALE = ipaddress.ip_network("100.64.0.0/10")
@@ -290,7 +299,7 @@ def area():
     pyperclip.copy(conteudo)
     if d.get("colar"):
         with teclado.pressed(Key.ctrl):
-            teclado.tap("v")
+            teclado.tap(vk("v"))
         return jsonify(msg="Colado no PC")
     return jsonify(msg="Copiado no PC")
 
@@ -308,6 +317,212 @@ def tela():
 @app.get("/icone.png")
 def estaticos():
     return send_from_directory(BASE, request.path.lstrip("/"))
+
+
+def volume_do_microfone():
+    """Controle de volume/mudo do microfone padrão do Windows."""
+    try:
+        dispositivo = AudioUtilities.GetMicrophone()
+    except AttributeError:
+        from pycaw.pycaw import IMMDeviceEnumerator
+        enumerador = comtypes.CoCreateInstance(
+            comtypes.GUID("{BCDE0395-E52F-467C-8E3D-C4579291692E}"),
+            IMMDeviceEnumerator, comtypes.CLSCTX_INPROC_SERVER)
+        dispositivo = enumerador.GetDefaultAudioEndpoint(1, 1)  # 1 = captura
+    iface = dispositivo.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    return cast(iface, POINTER(IAudioEndpointVolume))
+
+
+@app.post("/api/microfone")
+def microfone():
+    acao = (request.get_json(silent=True) or {}).get("acao", "estado")
+    comtypes.CoInitialize()
+    try:
+        v = volume_do_microfone()
+        if acao == "alternar":
+            v.SetMute(0 if v.GetMute() else 1, None)
+        mudo = bool(v.GetMute())
+    except Exception:
+        return jsonify(msg="Não achei o microfone padrão do Windows"), 500
+    finally:
+        comtypes.CoUninitialize()
+    return jsonify(msg="Microfone mutado" if mudo else "Microfone ligado", mudo=mudo)
+
+
+# Atalhos globais que você cria no Discord (Configurações > Atalhos)
+DISCORD_TECLAS = {"mutar": vk("m"), "ensurdecer": vk("d")}
+
+
+@app.post("/api/discord")
+def discord():
+    tecla = DISCORD_TECLAS.get((request.get_json(silent=True) or {}).get("acao"))
+    if tecla is None:
+        return jsonify(msg="Ação desconhecida"), 400
+    with teclado.pressed(Key.ctrl, Key.shift, Key.alt):
+        teclado.tap(tecla)
+    return jsonify(msg="Atalho do Discord enviado")
+
+
+COMBOS = {
+    "alt_tab": ([Key.alt], Key.tab),
+    "area_trabalho": ([Key.cmd], vk("d")),
+    "fechar_janela": ([Key.alt], Key.f4),
+    "captura": ([Key.cmd, Key.shift], vk("s")),
+    "tela_cheia": ([], Key.f11),
+    "gerenciador": ([Key.ctrl, Key.shift], Key.esc),
+    "copiar": ([Key.ctrl], vk("c")),
+    "colar": ([Key.ctrl], vk("v")),
+    "desfazer": ([Key.ctrl], vk("z")),
+}
+
+
+@app.post("/api/combo")
+def combo():
+    item = COMBOS.get((request.get_json(silent=True) or {}).get("nome"))
+    if item is None:
+        return jsonify(msg="Atalho desconhecido"), 400
+    modificadores, tecla = item
+    with teclado.pressed(*modificadores):
+        teclado.tap(tecla)
+    return jsonify(msg="Enviado")
+
+
+def nome_da_sessao(s):
+    try:
+        return s.Process.name() if s.Process else None
+    except Exception:
+        return None
+
+
+@app.post("/api/apps_audio")
+def apps_audio():
+    d = request.get_json(silent=True) or {}
+    comtypes.CoInitialize()
+    try:
+        sessoes = [(nome_da_sessao(s), s) for s in AudioUtilities.GetAllSessions()]
+        sessoes = [(n, s) for n, s in sessoes if n]
+        if "nome" in d:
+            nivel = max(0, min(100, int(d["nivel"]))) / 100
+            for n, s in sessoes:
+                if n == d["nome"]:
+                    s.SimpleAudioVolume.SetMasterVolume(nivel, None)
+        itens = {n: round(s.SimpleAudioVolume.GetMasterVolume() * 100) for n, s in sessoes}
+    except Exception:
+        return jsonify(msg="Não consegui ler os programas de áudio"), 500
+    finally:
+        comtypes.CoUninitialize()
+    return jsonify(itens=[{"nome": n, "nivel": v} for n, v in sorted(itens.items())])
+
+
+def abrir_alvo(alvo):
+    if alvo.startswith("app:"):
+        return abrir_app(alvo[4:].strip())
+    os.startfile(alvo)
+    return True
+
+
+def definir_volume(nivel):
+    comtypes.CoInitialize()
+    try:
+        iface = AudioUtilities.GetSpeakers().Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        cast(iface, POINTER(IAudioEndpointVolume)).SetMasterVolumeLevelScalar(
+            max(0, min(100, int(nivel))) / 100, None)
+    finally:
+        comtypes.CoUninitialize()
+
+
+def executar_modo(passos):
+    for p in passos:
+        try:
+            if "abrir" in p:
+                abrir_alvo(p["abrir"])
+            elif "volume" in p:
+                definir_volume(p["volume"])
+            elif "esperar" in p:
+                time.sleep(min(float(p["esperar"]), 30))
+            elif "desligar_em" in p:
+                subprocess.Popen(["shutdown", "/s", "/t", str(int(p["desligar_em"]) * 60)])
+        except Exception:
+            pass
+
+
+def ler_modos():
+    try:
+        return json.loads((BASE / "modos.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+
+
+@app.post("/api/modos")
+def lista_modos():
+    return jsonify(itens=[m["nome"] for m in ler_modos()])
+
+
+@app.post("/api/modo")
+def rodar_modo():
+    i = (request.get_json(silent=True) or {}).get("i")
+    lista = ler_modos()
+    if not isinstance(i, int) or not 0 <= i < len(lista):
+        return jsonify(msg="Modo inválido"), 400
+    threading.Thread(target=executar_modo, args=(lista[i].get("passos", []),), daemon=True).start()
+    return jsonify(msg=f"Modo {lista[i]['nome']} ativado")
+
+
+def powershell(cmd):
+    return subprocess.run(
+        ["powershell", "-NoProfile", "-Command", "[Console]::OutputEncoding=[Text.Encoding]::UTF8; " + cmd],
+        capture_output=True, text=True, encoding="utf-8", timeout=25,
+        creationflags=subprocess.CREATE_NO_WINDOW)
+
+
+def listar_saidas():
+    r = powershell("Get-AudioDevice -List | Where-Object {$_.Type -eq 'Playback'} | "
+                   "Select-Object Name,ID,Default | ConvertTo-Json -Compress")
+    dados = json.loads(r.stdout)
+    return [dados] if isinstance(dados, dict) else dados
+
+
+@app.post("/api/saidas")
+def saidas():
+    try:
+        lista = listar_saidas()
+        escolhido = (request.get_json(silent=True) or {}).get("id")
+        if escolhido:
+            if escolhido not in [d["ID"] for d in lista]:  # só aceita IDs da própria lista
+                return jsonify(msg="Saída desconhecida"), 400
+            powershell(f"Set-AudioDevice -ID '{escolhido}' | Out-Null")
+            lista = listar_saidas()
+    except Exception:
+        return jsonify(msg="Instale o módulo AudioDeviceCmdlets (veja o LEIAME)"), 500
+    return jsonify(itens=[{"nome": d["Name"], "id": d["ID"], "atual": bool(d["Default"])} for d in lista])
+
+
+async def _tocando(com_capa):
+    from winrt.windows.media.control import GlobalSystemMediaTransportControlsSessionManager as Gerente
+    gerente = await Gerente.request_async()
+    sessao = gerente.get_current_session()
+    if sessao is None:
+        return {"titulo": "", "artista": "", "tocando": False}
+    info = await sessao.try_get_media_properties_async()
+    resp = {"titulo": info.title, "artista": info.artist,
+            "tocando": sessao.get_playback_info().playback_status == 4}
+    if com_capa and info.thumbnail:
+        from winrt.windows.storage.streams import Buffer, DataReader, InputStreamOptions
+        fluxo = await info.thumbnail.open_read_async()
+        buf = Buffer(fluxo.size)
+        await fluxo.read_async(buf, buf.capacity, InputStreamOptions.READ_AHEAD)
+        bruto = bytearray(buf.length)
+        DataReader.from_buffer(buf).read_bytes(bruto)
+        resp["capa"] = base64.b64encode(bytes(bruto)).decode()
+    return resp
+
+
+@app.post("/api/tocando")
+def tocando():
+    try:
+        return jsonify(asyncio.run(_tocando(bool((request.get_json(silent=True) or {}).get("capa")))))
+    except Exception:
+        return jsonify(msg="Instale os pacotes winrt (veja o LEIAME)"), 500
 
 
 if __name__ == "__main__":

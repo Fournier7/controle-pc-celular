@@ -14,6 +14,11 @@ Projeto pessoal, feito para uso próprio e para aprender. Foi desenvolvido com o
 - **Enviar para o PC:** copia (e cola) um texto ou link no PC.
 - **Tela do PC:** captura do monitor principal, manual ou automática.
 - **Status:** uso de processador, memória e disco.
+- **Microfone e Discord:** muta o microfone do Windows e aperta atalhos globais do Discord (mutar e ensurdecer).
+- **Atalhos de teclado:** Alt+Tab, área de trabalho, fechar janela, captura de tela, copiar, colar e outros.
+- **Modos:** um toque abre vários programas e ajusta o volume (configurados em `servidor/modos.json`).
+- **Volume por programa** e **troca da saída de áudio**.
+- **Tocando agora:** título, artista e capa da música em reprodução.
 - Interface em abas, com tema vermelho e preto.
 
 ## Como funciona
@@ -68,6 +73,16 @@ Edite `servidor/atalhos.json`:
 
 - `https://...` abre o site no navegador padrão.
 - `app:Nome` procura o programa pelo nome no Menu Iniciar do Windows e abre.
+
+### Recursos opcionais
+
+Alguns recursos precisam de uma instalação extra, uma vez só:
+
+- **Tocando agora:** `pip install winrt-runtime winrt-Windows.Media.Control winrt-Windows.Storage.Streams winrt-Windows.Foundation winrt-Windows.Foundation.Collections`
+- **Troca da saída de áudio:** no PowerShell, `Install-Module -Name AudioDeviceCmdlets -Scope CurrentUser`
+- **Botões do Discord:** no Discord, em Atalhos, crie *Alternar mudo* com `Ctrl+Shift+Alt+M` e *Alternar surdo* com `Ctrl+Shift+Alt+D`.
+
+Sem isso, o resto continua funcionando e esses recursos mostram um aviso.
 
 ### Ligar o PC (Wake-on-LAN)
 
