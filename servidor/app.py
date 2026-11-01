@@ -431,6 +431,48 @@ def definir_volume(nivel):
         comtypes.CoUninitialize()
 
 
+def iniciar_filme():
+    """Abre o Stremio e pede o fechamento normal das janelas permitidas."""
+    import ctypes
+    from ctypes import wintypes
+
+    # Lista fixa: nunca recebe nomes de processos enviados pelo celular.
+    permitidos = {"firefox.exe", "spotify.exe"}
+    usuario = ctypes.WinDLL("user32", use_last_error=True)
+    callback_tipo = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    usuario.EnumWindows.argtypes = [callback_tipo, wintypes.LPARAM]
+    usuario.EnumWindows.restype = wintypes.BOOL
+    usuario.IsWindowVisible.argtypes = [wintypes.HWND]
+    usuario.IsWindowVisible.restype = wintypes.BOOL
+    usuario.GetWindowTextLengthW.argtypes = [wintypes.HWND]
+    usuario.GetWindowTextLengthW.restype = ctypes.c_int
+    usuario.GetWindowThreadProcessId.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.DWORD)]
+    usuario.GetWindowThreadProcessId.restype = wintypes.DWORD
+    usuario.PostMessageW.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM]
+    usuario.PostMessageW.restype = wintypes.BOOL
+
+    # Se não encontrar o Stremio, não fecha nenhuma janela.
+    if not abrir_app("Stremio"):
+        return jsonify(msg="Stremio não encontrado no Menu Iniciar. Nenhuma janela foi fechada."), 404
+
+    @callback_tipo
+    def visitar(janela, parametro):
+        if not usuario.IsWindowVisible(janela) or not usuario.GetWindowTextLengthW(janela):
+            return True
+        pid = wintypes.DWORD()
+        usuario.GetWindowThreadProcessId(janela, ctypes.byref(pid))
+        try:
+            if psutil.Process(pid.value).name().lower() in permitidos:
+                # WM_CLOSE respeita os avisos de trabalho não salvo do programa.
+                usuario.PostMessageW(janela, 0x0010, 0, 0)
+        except (psutil.Error, OSError):
+            pass
+        return True
+
+    usuario.EnumWindows(visitar, 0)
+    return jsonify(msg="Stremio aberto. Fechamento solicitado às janelas do Firefox e Spotify; volume mantido.")
+
+
 def executar_modo(passos):
     for p in passos:
         try:
@@ -464,6 +506,8 @@ def rodar_modo():
     lista = ler_modos()
     if not isinstance(i, int) or not 0 <= i < len(lista):
         return jsonify(msg="Modo inválido"), 400
+    if lista[i].get("acao") == "cinema":
+        return iniciar_filme()
     threading.Thread(target=executar_modo, args=(lista[i].get("passos", []),), daemon=True).start()
     return jsonify(msg=f"Modo {lista[i]['nome']} ativado")
 
@@ -523,6 +567,63 @@ def tocando():
         return jsonify(asyncio.run(_tocando(bool((request.get_json(silent=True) or {}).get("capa")))))
     except Exception:
         return jsonify(msg="Instale os pacotes winrt (veja o LEIAME)"), 500
+
+
+
+# Arquivos são apenas salvos: nunca abertos ou executados pelo servidor.
+LIMITE_ARQUIVO = 100 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = LIMITE_ARQUIVO + 1024 * 1024
+PASTA_RECEBIDOS = Path.home() / "Downloads" / "Recebidos do celular"
+EXTENSOES_RECEBIDAS = frozenset({
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif", ".avif", ".bmp",
+    ".mp4", ".mov", ".mkv", ".webm", ".avi", ".3gp",
+    ".mp3", ".m4a", ".wav", ".ogg", ".flac", ".aac", ".opus",
+    ".pdf", ".txt", ".csv", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".odt", ".ods", ".odp", ".epub", ".zip", ".rar", ".7z"
+})
+
+
+@app.errorhandler(413)
+def arquivo_grande(erro):
+    return jsonify(msg="Arquivo muito grande. O limite é 100 MB por arquivo."), 413
+
+
+@app.post("/api/arquivo")
+def receber_arquivo():
+    from werkzeug.utils import secure_filename
+    arquivos = request.files.getlist("arquivo")
+    if len(arquivos) != 1 or not arquivos[0].filename:
+        return jsonify(msg="Selecione um arquivo por envio."), 400
+    arquivo = arquivos[0]
+    extensao = Path(arquivo.filename).suffix.lower()
+    if extensao not in EXTENSOES_RECEBIDAS:
+        return jsonify(msg="Formato não permitido. Envie fotos, vídeos, áudio, documentos ou arquivos compactados."), 400
+    # Remove caminhos e caracteres especiais; sufixo aleatório evita sobrescrita.
+    nome = secure_filename(arquivo.filename.replace("\\", "/").split("/")[-1])
+    radical = Path(nome).stem[:100] or "arquivo"
+    destino = None
+    criado = False
+    try:
+        PASTA_RECEBIDOS.mkdir(parents=True, exist_ok=True)
+        destino = PASTA_RECEBIDOS / ("recebido-" + radical + "-" + secrets.token_hex(6) + extensao)
+        with destino.open("xb") as saida_arquivo:
+            criado = True
+            tamanho = 0
+            while bloco := arquivo.stream.read(1024 * 1024):
+                tamanho += len(bloco)
+                if tamanho > LIMITE_ARQUIVO:
+                    raise ValueError("limite")
+                saida_arquivo.write(bloco)
+        return jsonify(msg="Arquivo salvo em Downloads / Recebidos do celular.", nome=destino.name), 201
+    except (OSError, ValueError) as erro:
+        if criado:
+            try:
+                destino.unlink(missing_ok=True)
+            except OSError:
+                pass
+        if isinstance(erro, ValueError):
+            return jsonify(msg="O limite é 100 MB por arquivo."), 413
+        return jsonify(msg="Não foi possível salvar. Confira o espaço em disco e as permissões da pasta."), 500
 
 
 if __name__ == "__main__":

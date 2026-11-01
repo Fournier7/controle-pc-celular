@@ -1,6 +1,11 @@
 package br.com.controlepc;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.ActivityNotFoundException;
+import android.net.Uri;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -15,8 +20,10 @@ import android.widget.EditText;
 
 public class MainActivity extends Activity {
 
-    private static final String ENDERECO_PADRAO = "http://192.168.0.100:5000";
+    private static final String ENDERECO_PADRAO = "http://IP-DO-PC:5000";
 
+    private ValueCallback<Uri[]> retornoArquivos;
+    private static final int ESCOLHER_ARQUIVOS = 1001;
     private WebView web;
     private SharedPreferences prefs;
     private boolean dialogoAberto = false;
@@ -35,6 +42,29 @@ public class MainActivity extends Activity {
         s.setDomStorageEnabled(true); // guarda o token entre aberturas
         s.setTextZoom(100);
 
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> retorno,
+                                             FileChooserParams parametros) {
+                if (retornoArquivos != null) retornoArquivos.onReceiveValue(null);
+                retornoArquivos = retorno;
+                Intent escolher = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                escolher.addCategory(Intent.CATEGORY_OPENABLE);
+                escolher.setType("*/*");
+                escolher.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                try {
+                    startActivityForResult(escolher, ESCOLHER_ARQUIVOS);
+                } catch (ActivityNotFoundException erro) {
+                    retornoArquivos.onReceiveValue(null);
+                    retornoArquivos = null;
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setMessage("Não foi possível abrir o seletor de arquivos.")
+                            .setPositiveButton("OK", null).show();
+                }
+                return true;
+            }
+        });
+
         web.setWebViewClient(new WebViewClient() {
             @Override
             public void onReceivedError(WebView v, WebResourceRequest r, WebResourceError e) {
@@ -50,6 +80,35 @@ public class MainActivity extends Activity {
         } else {
             carregar();
         }
+    }
+
+    @Override
+    protected void onActivityResult(int pedido, int resultado, Intent dados) {
+        super.onActivityResult(pedido, resultado, dados);
+        if (pedido != ESCOLHER_ARQUIVOS || retornoArquivos == null) return;
+        Uri[] arquivos = null;
+        if (resultado == RESULT_OK && dados != null) {
+            if (dados.getClipData() != null) {
+                int quantidade = dados.getClipData().getItemCount();
+                arquivos = new Uri[quantidade];
+                for (int i = 0; i < quantidade; i++) {
+                    arquivos[i] = dados.getClipData().getItemAt(i).getUri();
+                }
+            } else if (dados.getData() != null) {
+                arquivos = new Uri[]{dados.getData()};
+            }
+        }
+        retornoArquivos.onReceiveValue(arquivos);
+        retornoArquivos = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (retornoArquivos != null) {
+            retornoArquivos.onReceiveValue(null);
+            retornoArquivos = null;
+        }
+        super.onDestroy();
     }
 
     private void carregar() {

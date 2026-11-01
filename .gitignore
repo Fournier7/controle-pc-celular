@@ -1,6 +1,9 @@
 # Segredos e arquivos locais
 token.txt
 *.log
+Recebidos do celular/
+backup-*/
+index-antes-*.html
 
 # Python
 __pycache__/

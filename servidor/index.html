@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0b">
+<meta name="theme-color" content="#11161e">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icone.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>Controle do PC</title>
 <style>
-:root{color-scheme:dark;--bg:#0a0a0b;--card:#141416;--btn:#1e1e22;--btn2:#2b2b31;--ink:#f2f2f3;--muted:#8b8b94;--line:#33333a;--accent:#e5202e;--on:#fff;--danger:#ff4d58;--dbg:#241214;--ok:#33d17a;--shadow:none}
+:root{color-scheme:dark;--bg:#11161e;--card:#141416;--btn:#1e1e22;--btn2:#2b2b31;--ink:#f2f2f3;--muted:#8b8b94;--line:#33333a;--accent:#e5202e;--on:#fff;--danger:#ff4d58;--dbg:#241214;--ok:#33d17a;--shadow:none}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;padding:max(20px,env(safe-area-inset-top)) 18px calc(104px + env(safe-area-inset-bottom))}
@@ -61,34 +61,72 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
 .tocando img{width:64px;height:64px;border-radius:12px;object-fit:cover}
 .tocando b{display:block}.tocando span{color:var(--muted);font-size:.9rem}
 #appsAudio>div{margin-bottom:8px}
+
+/* Atalhos de aplicativos: grafite e azul, com ícones locais. */
+#atalhos{gap:12px}
+#atalhos button{display:flex;align-items:center;gap:12px;text-align:left;min-height:76px;padding:14px;background:linear-gradient(145deg,#202833,#171d26);border:1px solid #354359;border-radius:14px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 #ffffff06;transition:border-color .18s,background .18s,transform .12s}
+#atalhos button::after{content:"↗";margin-left:auto;color:#8397b3;font-size:16px}
+#atalhos button:active{background:#223b5a;border-color:#579fff;transform:scale(.97)}
+#atalhos button:focus-visible{outline-color:#579fff}
+#atalhos .atalho-icone{width:34px;height:34px;flex:none;display:grid;place-items:center;color:#74afff;background:#458aff16;border:1px solid #458aff30;border-radius:10px}
+#atalhos svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#atalhos .atalho-nome{font-size:.9rem;color:#edf3ff;overflow-wrap:anywhere;min-width:0}
+@media(max-width:360px){#atalhos button{gap:8px;padding:10px}#atalhos button::after{display:none}}
+
+/* Tema tecnológico: todas as seções compartilham a mesma linguagem visual. */
+:root{--bg:#11161e;--card:#19212c;--btn:#222d3b;--btn2:#2b405c;--ink:#f0f5ff;--muted:#a3b2c8;--line:#35465e;--accent:#458aff;--danger:#ff707b;--dbg:#30212b;--ok:#45d9a1;--shadow:0 8px 24px #0002}
+body{background:radial-gradient(ellipse at 90% 0,#153155 0,transparent 45%),var(--bg);background-attachment:fixed;padding-left:16px;padding-right:16px;font-size:15px}
+header{margin:8px 2px 24px;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:20px}
+.marca{display:flex;align-items:center;gap:12px}.marca-icone{display:grid;place-items:center;width:44px;height:44px;border:1px solid #458aff88;background:#458aff18;color:#7db2ff;font-size:34px;border-radius:10px}
+.sobretitulo{font-size:9px;font-weight:700;letter-spacing:.16em;color:#89a4c8}h1{font-size:1.5rem;line-height:1.2}
+#estado{font-size:.72rem;white-space:nowrap;padding:7px 9px;border-radius:20px;background:#101923;border:1px solid var(--line)}#estado.on{color:#85e8c2;border-color:#45d9a138}
+section{position:relative;border-radius:14px;border:1px solid #35465e;background:linear-gradient(135deg,#202c3b,#171e28 70%);padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+section::before{content:"";position:absolute;left:14px;top:-1px;width:38px;height:2px;background:var(--accent);box-shadow:0 0 12px #458aff70}
+h2{font-size:.9rem;color:#edf4ff;font-weight:650;letter-spacing:.01em;margin-bottom:16px}
+button{border:1px solid #3a4b63;border-radius:10px;background:linear-gradient(145deg,#273447,#202a38);min-height:52px;font-size:.88rem;padding:10px;box-shadow:inset 0 1px 0 #ffffff05}
+button:active{border-color:#70a9ff;background:#29466b;transform:scale(.97)}
+.destaque{background:linear-gradient(135deg,#4c96ff,#2866e0);border-color:#71aaff;color:#fff;box-shadow:0 4px 14px #1759c533}
+.perigo{border-color:#ff707b66;box-shadow:none;color:#ff929a;background:#30212b}.perigo.armado{background:#b93849;color:#fff}
+.fraco{border:0;box-shadow:none;background:transparent;color:#9fbde5}
+input,textarea{border:1px solid #35465e;background:#121b27;border-radius:10px;font-size:.9rem}input::placeholder,textarea::placeholder{color:#8f9fb5}
+input[type=range]{border:0;accent-color:#5598ff;min-height:40px}
+.rotulo{font-size:.82rem}.med{background:#101923;height:6px}.med i{background:linear-gradient(90deg,#326be5,#6ab4ff)}
+.musica{background:linear-gradient(125deg,#173c69,#192737 65%,#171e28);border-color:#468ce0}
+.tocando{margin-bottom:16px;min-width:0}.tocando img{width:76px;height:76px;border-radius:10px;border:1px solid #5d8ac3}.tocando>div{min-width:0}.tocando b{font-size:1.03rem;overflow-wrap:anywhere}.tocando span{font-size:.85rem}
+.reproducao{align-items:center}.reproducao button{min-height:52px}.reproducao .destaque{border-radius:50%;width:58px;height:58px;justify-self:center}
+.icone-ui{width:21px;height:21px;display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+button .icone-ui{margin-right:6px}.reproducao button .icone-ui{margin:0;width:24px;height:24px}
+#modos button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:70px;color:#bad7ff}
+.area{border:1px solid #3e5575;border-radius:12px;background:radial-gradient(circle,#458aff16 1px,transparent 1px),#141f2e;background-size:16px 16px;color:#a9bdd8}
+#pad{height:260px;position:relative}#pad::after{content:"";position:absolute;bottom:16px;width:36px;height:3px;border-radius:4px;background:#5f91d1}.faixa{width:44px;font-size:.75rem}
+#abas{background:#151f2bef;border:1px solid #3d536f;border-radius:16px;box-shadow:0 8px 32px #0008;backdrop-filter:blur(18px);width:min(calc(100% - 32px),440px)}
+#abas button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;border:0;box-shadow:none;font-size:.73rem;min-height:60px;border-radius:10px}
+#abas button .icone-ui{margin:0}#abas button.on{color:#83b7ff;background:#458aff18;box-shadow:inset 0 -2px #458aff}
+#toast{border:1px solid #4c6484;background:#22354d;bottom:calc(100px + env(safe-area-inset-bottom))}dialog{border:1px solid #4b6b95;border-radius:16px;background:#192330}dialog::backdrop{background:#030a16bb}
+details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointer;color:#95bdf5;padding:8px 0;min-height:40px}
+#appsAudio>div{background:#121b27;border:1px solid #30425b;border-radius:10px;padding:12px;margin-bottom:10px}
+@media(max-width:360px){body{padding-left:10px;padding-right:10px}section{padding:12px}.marca{gap:7px}.marca-icone{width:34px;height:38px}h1{font-size:1.3rem}.sobretitulo{font-size:8px}.c3 button{font-size:.79rem;padding:8px 4px}.texto{gap:6px}.texto button{padding:8px 12px}}
+
+#formArquivos{margin-top:20px}.seletor-arquivos{display:grid;place-items:center;min-height:100px;border:1px dashed #649de8;border-radius:12px;background:#458aff12;color:#b9d7ff;font-weight:600;cursor:pointer}
+#arquivosEntrada{width:100%;margin-top:10px;padding:10px;min-height:48px;font-size:.78rem}
+#filaArquivos{list-style:none;margin:16px 0;padding:0;max-height:280px;overflow:auto}#filaArquivos li{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere;font-size:.85rem}
+#progressoArquivo{width:100%;height:12px;accent-color:var(--accent)}#estadoArquivo{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere}#enviarArquivos{width:100%}button:disabled{opacity:.45;cursor:default}
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>Controle do PC</h1>
+    <div class="marca"><span class="marca-icone" aria-hidden="true">▱</span><div><span class="sobretitulo">CONTROLE REMOTO</span><h1>Meu PC</h1></div></div>
     <span id="estado">Sem conexão</span>
   </header>
 
   <div class="aba ativa" id="aba-inicio">
-  <section>
-    <h2>Energia</h2>
-    <div class="grade c2">
-      <button class="perigo" data-rota="desligar" data-rotulo="Desligar" data-confirmar>Desligar</button>
-      <button class="perigo" data-rota="reiniciar" data-rotulo="Reiniciar" data-confirmar>Reiniciar</button>
-      <button data-rota="bloquear">Bloquear</button>
-      <button data-rota="suspender">Suspender</button>
+  <section class="musica">
+    <h2>Tocando agora</h2>
+    <div class="tocando">
+      <img id="tcCapa" alt="Capa do álbum" style="display:none">
+      <div><b id="tcTitulo">Nada tocando</b><span id="tcArtista"></span></div>
     </div>
-    <div class="grade c3">
-      <button data-min="30">Em 30 min</button>
-      <button data-min="60">Em 1 h</button>
-      <button data-min="120">Em 2 h</button>
-    </div>
-    <button class="fraco" data-rota="cancelar">Cancelar desligamento</button>
-  </section>
-
-  <section>
-    <h2>Mídia</h2>
     <div class="rotulo"><span>Volume</span><span id="volTxt">—</span></div>
     <input type="range" id="vol" min="0" max="100" aria-label="Volume">
     <div class="grade c3">
@@ -96,18 +134,10 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
       <button data-tecla="mudo">Mudo</button>
       <button data-tecla="volume_mais">Volume +</button>
     </div>
-    <div class="grade c3">
-      <button data-tecla="anterior">Anterior</button>
-      <button class="destaque" data-tecla="play_pause">Play / Pausa</button>
-      <button data-tecla="proxima">Próxima</button>
-    </div>
-  </section>
-
-  <section>
-    <h2>Tocando agora</h2>
-    <div class="tocando">
-      <img id="tcCapa" alt="Capa do álbum" style="display:none">
-      <div><b id="tcTitulo">Nada tocando</b><span id="tcArtista"></span></div>
+    <div class="grade c3 reproducao">
+      <button data-tecla="anterior" aria-label="Anterior"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 5v14m14-14L8 12l11 7z"/></svg></button>
+      <button class="destaque" data-tecla="play_pause" aria-label="Play / Pausa"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 11 7-11 7z"/></svg></button>
+      <button data-tecla="proxima" aria-label="Próxima"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 5v14M5 5l11 7-11 7z"/></svg></button>
     </div>
   </section>
 
@@ -120,12 +150,28 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
       <button id="dcMutar">Discord: mutar</button>
       <button id="dcSurdo">Discord: ensurdecer</button>
     </div>
-    <p class="dica">O botão do microfone silencia o microfone do Windows para todos os programas. Os botões do Discord usam os atalhos Ctrl+Shift+Alt+M (mutar) e Ctrl+Shift+Alt+D (ensurdecer) configurados no Discord.</p>
+    <details><summary>Como funcionam os controles?</summary><p class="dica">O botão do microfone silencia o microfone do Windows para todos os programas. Os botões do Discord usam os atalhos Ctrl+Shift+Alt+M (mutar) e Ctrl+Shift+Alt+D (ensurdecer) configurados no Discord.</p></details>
   </section>
 
   <section>
-    <h2>Modos</h2>
+    <h2>Modos de uso</h2>
     <div class="grade c2" id="modos"></div>
+  </section>
+
+  <section>
+    <h2>Energia</h2>
+    <div class="grade c2">
+      <button class="perigo" data-rota="desligar" data-rotulo="Desligar" data-confirmar>Desligar</button>
+      <button class="perigo" data-rota="reiniciar" data-rotulo="Reiniciar" data-confirmar>Reiniciar</button>
+      <button data-rota="bloquear"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2"/></svg>Bloquear</button>
+      <button data-rota="suspender"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14A9 9 0 0 1 10 3a9 9 0 1 0 10 11z"/></svg>Suspender</button>
+    </div>
+    <div class="grade c3">
+      <button data-min="30">Em 30 min</button>
+      <button data-min="60">Em 1 h</button>
+      <button data-min="120">Em 2 h</button>
+    </div>
+    <button class="fraco" data-rota="cancelar">Cancelar desligamento</button>
   </section>
   </div>
 
@@ -166,20 +212,7 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
     </div>
   </section>
 
-  <section>
-    <h2>Atalhos de teclado</h2>
-    <div class="grade c3">
-      <button data-combo="alt_tab">Alt+Tab</button>
-      <button data-combo="area_trabalho">Área de trabalho</button>
-      <button class="perigo" data-combo="fechar_janela" data-rotulo="Fechar janela" data-confirmar>Fechar janela</button>
-      <button data-combo="captura">Captura de tela</button>
-      <button data-combo="tela_cheia">Tela cheia</button>
-      <button data-combo="gerenciador">Gerenc. de tarefas</button>
-      <button data-combo="copiar">Copiar</button>
-      <button data-combo="colar">Colar</button>
-      <button data-combo="desfazer">Desfazer</button>
-    </div>
-  </section>
+
   </div>
 
   <div class="aba" id="aba-mais">
@@ -196,7 +229,7 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
   </section>
 
   <section>
-    <h2>Atalhos</h2>
+    <h2>Seus aplicativos</h2>
     <div class="grade c2" id="atalhos"></div>
   </section>
 
@@ -223,12 +256,29 @@ dialog p{margin:0 0 12px}dialog form{display:grid;gap:10px}
     <div id="status"></div>
   </section>
   </div>
+
+<div class="aba" id="aba-arquivos">
+  <section>
+    <h2>Do celular para o PC</h2>
+    <p class="dica">Envie fotos, vídeos, áudio, documentos e arquivos compactados. Até 100 MB por arquivo.</p>
+    <form id="formArquivos">
+      <label class="seletor-arquivos" for="arquivosEntrada">Selecionar arquivos</label>
+      <input id="arquivosEntrada" type="file" multiple aria-describedby="destinoArquivos">
+      <p id="destinoArquivos" class="dica">Destino no PC: Downloads / Recebidos do celular. Os arquivos não serão abertos automaticamente.</p>
+      <ul id="filaArquivos" aria-live="polite"></ul>
+      <progress id="progressoArquivo" max="100" value="0" aria-label="Progresso do envio"></progress>
+      <p id="estadoArquivo" role="status">Nenhum arquivo selecionado.</p>
+      <button class="destaque" id="enviarArquivos" type="submit" disabled>Enviar para o PC</button>
+    </form>
+  </section>
+</div>
 </main>
 
 <nav id="abas" aria-label="Seções">
-  <button class="on" data-aba="inicio">Início</button>
-  <button data-aba="controle">Controle</button>
-  <button data-aba="mais">Mais</button>
+  <button class="on" data-aba="inicio"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span>Início</span></button>
+  <button data-aba="controle"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><span>Controle</span></button>
+  <button data-aba="arquivos"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg><span>Arquivos</span></button>
+  <button data-aba="mais"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>Mais</span></button>
 </nav>
 
 <div id="toast" role="status" aria-live="polite"></div>
@@ -292,7 +342,7 @@ async function enviar(rota, corpo, silencioso) {
 document.addEventListener('click', e => {
   const b = e.target.closest('button[data-rota], button[data-tecla], button[data-combo]');
   if (!b) return;
-  if (b.dataset.confirmar) {
+  if (b.hasAttribute('data-confirmar')) {
     if (!b.classList.contains('armado')) {
       b.classList.add('armado');
       b.textContent = 'Toque de novo';
@@ -412,10 +462,41 @@ async function atualizarStatus() {
   for (const [k] of ROTULOS) { $('#t-' + k).textContent = Math.round(s[k]) + '%'; $('#b-' + k).style.width = s[k] + '%'; }
 }
 
+
+// Desenhos locais e fixos: sem carregar imagens de serviços externos.
+const ICONES_APPS = {
+  youtube: '<rect x="3" y="5" width="18" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>',
+  spotify: '<circle cx="12" cy="12" r="9"/><path d="M6 9c4-2 8-2 12 0M7 12c3-1.5 7-1.5 10 0M8 15c2-1 5-1 8 0"/>',
+  discord: '<path d="M8 5 5 6 3 17l5 2 1-2h6l1 2 5-2-2-11-3-1-1 2H9z"/><circle cx="8.5" cy="12" r="1"/><circle cx="15.5" cy="12" r="1"/>',
+  firefox: '<path d="m18 4 1 5a8 8 0 1 1-14-3l1 5 4-2-1-4 4 2c4 0 6 3 5 6s-5 4-7 2"/>',
+  steam: '<circle cx="16" cy="8" r="5"/><circle cx="16" cy="8" r="2"/><circle cx="6" cy="17" r="3"/><path d="m8 15 5-4M9 18l8-5M3 16l-2-1"/>',
+  valorant: '<path d="m3 5 9 11h7l-4 4H9L3 13zM21 5v8l-5 3h-4z"/>',
+  pycharm: '<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M7 15V8h3a2 2 0 0 1 0 4H7M18 9a3 3 0 1 0 0 5M6 18h5"/>',
+  claude: '<path d="M12 2v20M2 12h20M5 5l14 14M5 19 19 5M8 3l8 18M3 8l18 8M3 16l18-8M8 21l8-18"/>',
+  whatsapp: '<path d="M5 18a9 9 0 1 1 4 3l-6 1z"/><path d="m8 7 2 3-1 1c1 2 2 3 4 4l1-1 3 2c-1 4-10-1-11-6z"/>',
+  padrao: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/>'
+};
+
+function criarAtalho(nome, indice) {
+  const botao = document.createElement('button');
+  botao.type = 'button';
+  botao.dataset.i = indice;
+  const icone = document.createElement('span');
+  icone.className = 'atalho-icone';
+  icone.setAttribute('aria-hidden', 'true');
+  const desenho = ICONES_APPS[nome.toLowerCase()] || ICONES_APPS.padrao;
+  icone.innerHTML = '<svg viewBox="0 0 24 24" focusable="false">' + desenho + '</svg>';
+  const rotulo = document.createElement('span');
+  rotulo.className = 'atalho-nome';
+  rotulo.textContent = nome;
+  botao.append(icone, rotulo);
+  return botao;
+}
+
 async function iniciar() {
   if (!await enviar('ping', {}, true)) return;
   const a = await dados('atalhos');
-  if (a) $('#atalhos').replaceChildren(...a.itens.map((n, i) => { const b = document.createElement('button'); b.textContent = n; b.dataset.i = i; return b; }));
+  if (a) $('#atalhos').replaceChildren(...a.itens.map(criarAtalho));
   const v = await dados('volume');
   if (v) { $('#vol').value = v.nivel; $('#volTxt').textContent = v.nivel + '%'; }
   atualizarStatus();
@@ -464,7 +545,7 @@ async function carregarModos() {
   const d = await dados('modos');
   if (d) $('#modos').replaceChildren(...d.itens.map((n, i) => { const b = document.createElement('button'); b.textContent = n; b.dataset.modo = i; return b; }));
 }
-$('#modos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) enviar('modo', {i: +b.dataset.modo}); });
+$('#modos').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.textContent === 'Filme' && !confirm('Abrir o Stremio e fechar as janelas visíveis do Firefox e Spotify? Salve seu trabalho antes. O volume será mantido.')) return; enviar('modo', {i: +b.dataset.modo}); });
 
 async function carregarApps() {
   const d = await dados('apps_audio');
@@ -490,6 +571,76 @@ async function carregarSaidas(id) {
   $('#saidasMsg').textContent = '';
   $('#saidas').replaceChildren(...d.itens.map(s => { const b = document.createElement('button'); b.textContent = s.nome; if (s.atual) b.className = 'destaque'; b.onclick = () => carregarSaidas(s.id); return b; }));
 }
+
+const entradaArquivos = $('#arquivosEntrada');
+let enviandoArquivos = false;
+entradaArquivos.addEventListener('change', () => {
+  $('#filaArquivos').replaceChildren(...Array.from(entradaArquivos.files).map(arquivo => {
+    const item = document.createElement('li');
+    item.textContent = arquivo.name + ' · ' + (arquivo.size / 1048576).toFixed(1) + ' MB';
+    return item;
+  }));
+  $('#enviarArquivos').disabled = !entradaArquivos.files.length;
+  $('#progressoArquivo').value = 0;
+  $('#estadoArquivo').textContent = entradaArquivos.files.length ? entradaArquivos.files.length + ' arquivo(s) selecionado(s).' : 'Nenhum arquivo selecionado.';
+});
+
+function transmitirArquivo(arquivo, indice, total) {
+  return new Promise((resolver, rejeitar) => {
+    const requisicao = new XMLHttpRequest();
+    const formulario = new FormData();
+    formulario.append('arquivo', arquivo);
+    requisicao.open('POST', '/api/arquivo');
+    requisicao.setRequestHeader('X-Token', token);
+    requisicao.timeout = 15 * 60 * 1000;
+    requisicao.upload.onprogress = evento => {
+      if (evento.lengthComputable) {
+        const porcentagem = Math.round(evento.loaded / evento.total * 100);
+        $('#progressoArquivo').value = porcentagem;
+        $('#estadoArquivo').textContent = (indice + 1) + '/' + total + ' · ' + arquivo.name + ' · ' + porcentagem + '%' + (porcentagem === 100 ? ' — salvando no PC…' : '');
+      }
+    };
+    requisicao.onload = () => {
+      let resposta;
+      try { resposta = JSON.parse(requisicao.responseText); } catch { resposta = {msg: 'Resposta inesperada do servidor.'}; }
+      if (requisicao.status === 401) {
+        localStorage.removeItem('token'); token = ''; estado(false); pedirToken('Digite novamente o token para enviar arquivos.');
+      }
+      if (requisicao.status === 201) resolver(resposta);
+      else rejeitar(new Error(resposta.msg || 'Não foi possível enviar.'));
+    };
+    requisicao.onerror = () => rejeitar(new Error('Conexão interrompida. Confira a pasta no PC antes de reenviar.'));
+    requisicao.ontimeout = () => rejeitar(new Error('O envio demorou demais. Confira a pasta no PC antes de reenviar.'));
+    requisicao.send(formulario);
+  });
+}
+
+$('#formArquivos').addEventListener('submit', async evento => {
+  evento.preventDefault();
+  if (enviandoArquivos) return;
+  if (!token) { pedirToken(); return; }
+  const arquivos = Array.from(entradaArquivos.files);
+  if (!arquivos.length) return;
+  if (arquivos.some(arquivo => arquivo.size > 100 * 1048576)) { aviso('O limite é 100 MB por arquivo.', true); return; }
+  enviandoArquivos = true; entradaArquivos.disabled = true; $('#enviarArquivos').disabled = true;
+  let enviados = 0;
+  try {
+    for (let i = 0; i < arquivos.length; i++) {
+      $('#progressoArquivo').value = 0;
+      $('#estadoArquivo').textContent = 'Enviando ' + arquivos[i].name + '…';
+      const resultado = await transmitirArquivo(arquivos[i], i, arquivos.length);
+      $('#filaArquivos').children[i].textContent = '✓ Salvo: ' + resultado.nome;
+      enviados++;
+    }
+    $('#estadoArquivo').textContent = enviados + ' arquivo(s) salvo(s) em Downloads / Recebidos do celular.';
+    entradaArquivos.value = ''; aviso('Arquivos recebidos no PC!');
+  } catch (erro) {
+    $('#estadoArquivo').textContent = enviados + ' salvo(s). ' + erro.message + ' Selecione somente os arquivos restantes para tentar novamente.';
+    entradaArquivos.value = ''; aviso(erro.message, true);
+  } finally {
+    enviandoArquivos = false; entradaArquivos.disabled = false; $('#enviarArquivos').disabled = true;
+  }
+});
 </script>
 </body>
 </html>
