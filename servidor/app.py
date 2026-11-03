@@ -216,25 +216,50 @@ def lista_atalhos():
 
 
 APPS = {}
+CATALOGO_APPS = None
+TRAVA_APPS = threading.Lock()
+REPETIR_BUSCA_APPS_EM = 0
+
+
+def carregar_apps_uwp():
+    """Consulta a lista uma vez por execução; não abre nenhum programa."""
+    global CATALOGO_APPS, REPETIR_BUSCA_APPS_EM
+    with TRAVA_APPS:
+        if CATALOGO_APPS is not None:
+            return CATALOGO_APPS
+        if time.monotonic() < REPETIR_BUSCA_APPS_EM:
+            return []
+        cmd = "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | ConvertTo-Json -Compress"
+        try:
+            resultado = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", cmd],
+                capture_output=True, text=True, encoding="utf-8", timeout=15,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+            )
+            if resultado.returncode != 0:
+                raise ValueError("Não foi possível consultar os aplicativos")
+            dados = json.loads(resultado.stdout)
+            if isinstance(dados, dict):
+                dados = [dados]
+            if dados is None:
+                dados = []
+            if not isinstance(dados, list):
+                raise ValueError("Lista de aplicativos inválida")
+            CATALOGO_APPS = [a for a in dados if isinstance(a, dict)
+                             and isinstance(a.get("Name"), str)
+                             and isinstance(a.get("AppID"), str)]
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            # Evita disparar consultas lentas em sequência quando o PowerShell falha.
+            REPETIR_BUSCA_APPS_EM = time.monotonic() + 30
+            return []
+        return CATALOGO_APPS
 
 
 def abrir_app_uwp(nome):
-    """Plano B: apps da Microsoft Store, achados pelo Get-StartApps."""
+    """Plano B: busca no catálogo preparado ao iniciar o servidor."""
     chave = nome.lower()
     if chave not in APPS:
-        cmd = "[Console]::OutputEncoding=[Text.Encoding]::UTF8; Get-StartApps | ConvertTo-Json -Compress"
-        saida = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", cmd],
-            capture_output=True, text=True, encoding="utf-8",
-            creationflags=subprocess.CREATE_NO_WINDOW,
-        ).stdout
-        try:
-            apps = json.loads(saida)
-        except ValueError:
-            return False
-        if isinstance(apps, dict):
-            apps = [apps]
-        achados = [a for a in apps if chave in a["Name"].lower()]
+        achados = [a for a in carregar_apps_uwp() if chave in a["Name"].lower()]
         if not achados:
             return False
         achados.sort(key=lambda a: (a["Name"].lower() != chave, len(a["Name"])))
@@ -629,4 +654,6 @@ def receber_arquivo():
 if __name__ == "__main__":
     print(f"\nAbra no celular: http://{ip_local()}:{PORTA}")
     print(f"Token: {TOKEN}\n")
+    # Prepara os atalhos da Store sem atrasar a abertura do servidor.
+    threading.Thread(target=carregar_apps_uwp, daemon=True).start()
     app.run(host="0.0.0.0", port=PORTA)

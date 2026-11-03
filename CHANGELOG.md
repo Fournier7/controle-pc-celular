@@ -1,5 +1,17 @@
 # Histórico de mudanças
 
+## 2026-11-02
+
+### Otimizado
+
+- Catálogo de aplicativos da Microsoft Store preparado em segundo plano ao iniciar o servidor e reutilizado entre atalhos.
+- Consulta única protegida contra requisições concorrentes, com tempo limite e intervalo de nova tentativa após falha.
+- Elimina a consulta repetida ao PowerShell ao abrir aplicativos como WhatsApp. O tempo de inicialização do próprio programa ainda depende do Windows.
+- Testes isolados do cache aprovados e melhora confirmada pelo usuário no PC.
+
+Para carregar a otimização, reinicie o servidor. Não é necessário gerar ou instalar outro APK. Após instalar novos aplicativos da Store, reinicie o servidor para atualizar o catálogo.
+
+
 ## 2026-11-01
 
 ### Adicionado
