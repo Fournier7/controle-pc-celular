@@ -2,6 +2,19 @@
 
 ## 2026-11-02
 
+### Monitores, aba PC e preset Filme
+
+- Nova aba PC reúne atalhos de aplicativos e controles dos monitores; as demais funções continuam em Mais.
+- Brilho real por DDC/CI com leitura de confirmação, quando suportado, e escurecimento independente por software para telas sem resposta.
+- Camada por software sem capturar cliques/foco, removida ao parar o servidor ou usar o botão de remoção.
+- Consultas sob demanda e ajustes ao soltar o slider, sem enfileirar comandos a cada movimento.
+- Modo Filme ajusta o Samsung identificado deste setup para 50% por software e mantém o brilho do Haiz e o volume.
+- Três rotas POST autenticadas com validação de tipo, monitor e nível de 20 a 100.
+- Testes isolados dos controles e do preset; cinco capturas atualizadas com dados de demonstração.
+- Sem mudança no código Android: o APK existente pode abrir a interface nova com o servidor atualizado.
+
+
+
 ### Corrigido: modo Filme e reinicialização
 
 - Stremio iniciado primeiro por caminhos locais conhecidos, com diretório de trabalho correto e busca pelo Menu Iniciar como alternativa.

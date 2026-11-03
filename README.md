@@ -2,7 +2,7 @@
 
 Controle seu computador com Windows pelo celular na mesma rede Wi-Fi. Um servidor Python com Flask executa as ações no PC, uma interface web reúne os controles e um app Android com WebView permite acessar tudo em tela cheia.
 
-O projeto tem interface em **grafite e azul**, com quatro abas: **Início**, **Controle**, **Arquivos** e **Mais**. Não precisa de app Android para usar: o navegador do celular também funciona.
+O projeto tem interface em **grafite e azul**, com cinco abas: **Início**, **Controle**, **PC**, **Arquivos** e **Mais**. Não precisa de app Android para usar: o navegador do celular também funciona.
 
 Projeto pessoal de aprendizado e portfólio, desenvolvido com auxílio de Claude e Codex como ferramentas de estudo.
 
@@ -15,8 +15,9 @@ As imagens abaixo são capturas da interface atual renderizada em tamanho de cel
   <img src="docs/imagens/controle.png" width="240" alt="Controle: touchpad e teclado virtual">
 </p>
 <p align="center">
+  <img src="docs/imagens/pc.png" width="240" alt="PC: atalhos de aplicativos e controles independentes de brilho dos monitores">
   <img src="docs/imagens/arquivos.png" width="240" alt="Arquivos: seleção de fotos e documentos para envio ao PC">
-  <img src="docs/imagens/mais.png" width="240" alt="Mais: volume por programa, saída de áudio e atalhos de aplicativos">
+  <img src="docs/imagens/mais.png" width="240" alt="Mais: áudio, envio de texto, captura de tela e status do PC">
 </p>
 
 ## O que dá para fazer
@@ -25,8 +26,11 @@ As imagens abaixo são capturas da interface atual renderizada em tamanho de cel
 | --- | --- |
 | **Início** | Música com capa, reprodução e volume; microfone do Windows; atalhos globais do Discord; modos; bloquear, suspender, desligar e reiniciar; agendar e cancelar desligamento. |
 | **Controle** | Touchpad com cliques e rolagem; digitar texto no PC; Enter, Esc, apagar, setas, Tab e Espaço. |
+| **PC** | Atalhos de aplicativos e controles independentes de brilho real ou escurecimento por software. |
 | **Arquivos** | Enviar fotos, vídeos, áudio, documentos e arquivos compactados ao PC, com seleção múltipla e progresso por arquivo. |
-| **Mais** | Volume por programa, saída de áudio, atalhos de aplicativos, copiar/colar texto no PC, captura de tela e uso de CPU, memória e disco. |
+| **Mais** | Volume por programa, saída de áudio, copiar/colar texto no PC, captura de tela e uso de CPU, memória e disco. |
+
+A aba **PC** reúne os controles dos monitores e os atalhos de aplicativos, reduzindo a rolagem em **Mais**.
 
 Os atalhos atuais incluem YouTube, Spotify, Discord, Firefox, Steam, Valorant, Claude e WhatsApp. PyCharm continua no modo **Programar**, sem um botão separado na lista de aplicativos.
 
@@ -125,10 +129,26 @@ Os modos ficam em `servidor/modos.json`:
 | --- | --- |
 | **Jogar** | Abre Riot Client e Discord. |
 | **Programar** | Abre Firefox, PyCharm e Claude. |
-| **Filme** | Abre Stremio, mantém o volume e solicita o fechamento normal das janelas visíveis do Firefox, Spotify, ChatGPT e Claude, sem confirmação adicional. |
+| **Filme** | Abre Stremio, mantém o volume e solicita o fechamento normal das janelas visíveis do Firefox, Spotify, ChatGPT e Claude, sem confirmação adicional, e ajusta o Samsung deste setup para 50% por software. |
 | **Dormir** | Ajusta o volume para 15% e agenda o desligamento em 30 minutos. |
 
+O preset de brilho do modo Filme é específico do setup de desenvolvimento: ajusta somente o Samsung identificado, sem mudar o Haiz ou o volume. Se não encontrar uma única tela correspondente, mantém os monitores e avisa na resposta.
+
 O modo Filme usa uma ação própria no servidor (`"acao": "cinema"`). O servidor tenta primeiro instalações conhecidas do Stremio e depois o Menu Iniciar. Se não conseguir iniciá-lo, não solicita o fechamento das janelas. Ele não encerra outros programas, como Rainmeter e utilitários de otimização. Firefox, Spotify, ChatGPT e Claude são fechados normalmente, sem matar processos à força; avisos de trabalho não salvo podem exigir interação no PC.
+
+## Brilho dos monitores
+
+Em **PC → Monitores**, toque em **Carregar monitores**. A consulta só ocorre quando solicitada, sem atrasar a abertura da interface. Cada tela tem seu próprio controle entre 20% e 100%; o comando é enviado ao soltar o slider.
+
+- **Brilho real:** usa DDC/CI, quando disponível, com confirmação por leitura do valor. Depende do monitor, driver, cabo e adaptadores.
+- **Escurecimento por software:** cria uma camada preta sem capturar cliques ou foco. Em 100%, a camada é removida; não reduz a iluminação física do painel.
+- **Remover escurecimento:** remove todas as camadas por software, mantendo o brilho físico dos monitores.
+
+A camada é removida ao encerrar o servidor e pode não cobrir jogos em tela cheia exclusiva. Após desconectar ou reorganizar telas, remova o escurecimento e atualize a lista antes de ajustar novamente.
+
+No setup usado para desenvolvimento, o Haiz HZ-LM25GM respondeu ao controle DDC/CI. O Samsung conectado por conversor VGA usa escurecimento por software. Os nomes desses dois dispositivos são associados a códigos conhecidos no módulo; outras telas usam a identificação do Windows, que pode ser genérica. O funcionamento ainda depende da compatibilidade de cada computador.
+
+Os módulos `servidor/monitores.py` e `servidor/escurecer.py` usam bibliotecas do Windows e Tkinter, incluído na instalação padrão do Python para Windows; não foram adicionados pacotes ao requirements.txt. Ao atualizar o servidor, copie esses módulos junto do app.py e index.html.
 
 ## Recursos opcionais
 
@@ -203,6 +223,8 @@ python tests/testar_envio.py
 python tests/testar_cache_apps.py
 python tests/testar_filme.py
 python tests/testar_instancia.py
+python tests/testar_monitores.py
+python tests/testar_filme_samsung.py
 ```
 
 Os testes de upload extraem as rotas do código sem iniciar o controle do PC nem ler a credencial local. Verificam autenticação, método HTTP, formatos, nomes, duplicatas, limite e remoção de arquivos parciais. Não substituem os testes de áudio, mouse e envio real pelo celular.

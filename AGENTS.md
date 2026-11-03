@@ -16,10 +16,11 @@ Controlar um PC com Windows pelo celular, na mesma rede Wi-Fi. Um servidor Flask
 - Arquivos `.bat` e `.vbs` com final de linha CRLF.
 
 ## Regras
+- Monitores: controles em PC; usar DDC/CI com confirmação quando disponível, ou camada por software sem foco/cliques. Validar tela contra enumeração local e nível inteiro entre 20 e 100. Não aceitar comandos/caminhos do celular. Encerrar a camada ao parar o servidor.
 - Manter a proteção de instância única no início do servidor; para carregar mudanças no Python, parar a instância antiga antes de iniciar a nova.
-- Interface atual: grafite e azul, abas Início, Controle, Arquivos e Mais. Vermelho reservado a ações de risco.
+- Interface atual: grafite e azul, abas Início, Controle, PC, Arquivos e Mais. Vermelho reservado a ações de risco.
 - Upload autorizado pelo usuário: POST autenticado, até 100 MB por arquivo, extensões em lista fechada, destino fixo Downloads / Recebidos do celular. Nunca abrir ou executar arquivos recebidos nem aceitar caminhos do celular.
-- Modo Filme: abrir Stremio, preservar volume e pedir fechamento normal somente de janelas visíveis de Firefox, Spotify, ChatGPT e Claude. Sem confirmação adicional no celular. Não encerrar outros processos.
+- Modo Filme: abrir Stremio, preservar volume e pedir fechamento normal somente de janelas visíveis de Firefox, Spotify, ChatGPT e Claude. Sem confirmação adicional no celular. Ajustar o Samsung identificado em 50% por software, sem alterar Haiz. Não encerrar outros processos.
 - Não apagar nem renomear arquivos sem avisar antes.
 - Explicar as mudanças de forma simples: o usuário é iniciante. Responder em português do Brasil.
 - Nunca incluir `token.txt`, tokens, senhas, e-mails ou IPs reais no código, nos commits ou nos exemplos.

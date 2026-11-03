@@ -476,6 +476,21 @@ def abrir_stremio():
     return abrir_app("Stremio")
 
 
+def ajustar_samsung_filme():
+    """Aplica somente o preset fixo da tela Samsung deste setup."""
+    import monitores
+    try:
+        telas = [t for t in monitores.listar()
+                 if t["nome"] == "Samsung (via conversor VGA)" and t["tipo"] == "software"]
+        if len(telas) != 1:
+            return "Samsung não identificado; brilho dos monitores mantido."
+        monitores.ajustar({"id": telas[0]["id"], "tipo": "software", "nivel": 50})
+        return "Samsung em 50% por software; brilho do Haiz mantido."
+    except Exception:
+        app.logger.exception("Falha ao aplicar brilho do Samsung no modo Filme")
+        return "Não consegui ajustar o Samsung; use os controles na aba PC."
+
+
 def iniciar_filme():
     """Abre o Stremio e pede o fechamento normal das janelas permitidas."""
     import ctypes
@@ -516,7 +531,8 @@ def iniciar_filme():
 
     if not usuario.EnumWindows(visitar, 0):
         return jsonify(msg="Stremio iniciado, mas não consegui listar as janelas do Windows."), 500
-    return jsonify(msg="Stremio iniciado. Fechamento solicitado às janelas de Firefox, Spotify, ChatGPT e Claude; volume mantido.")
+    brilho_filme = ajustar_samsung_filme()
+    return jsonify(msg="Stremio iniciado. Fechamento solicitado às janelas de Firefox, Spotify, ChatGPT e Claude; volume mantido. " + brilho_filme)
 
 
 def executar_modo(passos):
@@ -674,6 +690,40 @@ def receber_arquivo():
         if isinstance(erro, ValueError):
             return jsonify(msg="O limite é 100 MB por arquivo."), 413
         return jsonify(msg="Não foi possível salvar. Confira o espaço em disco e as permissões da pasta."), 500
+
+
+
+@app.post("/api/monitores")
+def lista_monitores():
+    import monitores
+    try:
+        return jsonify(itens=monitores.listar())
+    except Exception:
+        app.logger.exception("Falha ao consultar os monitores")
+        return jsonify(msg="Não consegui consultar os monitores. Tente atualizar a lista."), 500
+
+
+@app.post("/api/monitor_brilho")
+def brilho_monitor():
+    import monitores
+    try:
+        itens = monitores.ajustar(request.get_json(silent=True))
+        return jsonify(msg="Monitor ajustado", itens=itens)
+    except ValueError as erro:
+        return jsonify(msg=str(erro)), 400
+    except Exception:
+        app.logger.exception("Falha ao ajustar o monitor")
+        return jsonify(msg="Não consegui ajustar o monitor. Atualize a lista e tente novamente."), 500
+
+
+@app.post("/api/monitores_limpar")
+def limpar_escurecimento():
+    import monitores
+    try:
+        monitores.limpar()
+        return jsonify(msg="Escurecimento por software removido; brilho real mantido.")
+    except Exception:
+        return jsonify(msg="Não consegui remover o escurecimento. Reinicie o servidor."), 500
 
 
 def garantir_instancia_unica():

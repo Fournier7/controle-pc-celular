@@ -111,6 +111,13 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
 #arquivosEntrada{width:100%;margin-top:10px;padding:10px;min-height:48px;font-size:.78rem}
 #filaArquivos{list-style:none;margin:16px 0;padding:0;max-height:280px;overflow:auto}#filaArquivos li{padding:10px 0;border-bottom:1px solid var(--line);overflow-wrap:anywhere;font-size:.85rem}
 #progressoArquivo{width:100%;height:12px;accent-color:var(--accent)}#estadoArquivo{font-size:.85rem;color:var(--muted);overflow-wrap:anywhere}#enviarArquivos{width:100%}button:disabled{opacity:.45;cursor:default}
+
+#controlesMonitores>div{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:#121b27}#controlesMonitores small{display:block;color:var(--muted);margin:5px 0;font-size:.78rem}#controlesMonitores b{font-size:.87rem}#controlesMonitores .rotulo{gap:10px}#controlesMonitores input{margin-top:8px}#mensagemMonitores{margin-bottom:14px}#limparMonitores{font-size:.8rem}
+
+#abas button{min-width:0;padding:8px 3px;font-size:.68rem}#abas{gap:2px}
+
+@media(max-width:440px){#atalhos button{gap:8px}#atalhos button::after{display:none}}
+#atalhos .atalho-nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -215,7 +222,26 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
 
   </div>
 
-  <div class="aba" id="aba-mais">
+  <div class="aba" id="aba-pc">
+<section>
+    <h2>Seus aplicativos</h2>
+    <div class="grade c2" id="atalhos"></div>
+  </section>
+<section>
+    <h2>Monitores</h2>
+    <p class="dica">Ajuste cada tela separadamente. No modo software, 100% remove o escurecimento.</p>
+    <div id="controlesMonitores"></div>
+    <p id="mensagemMonitores" class="dica" role="status">Toque em carregar para consultar as telas.</p>
+    <div class="grade c2">
+      <button id="atualizarMonitores">Carregar monitores</button>
+      <button id="limparMonitores">Remover escurecimento</button>
+    </div>
+    <p class="dica">Software: escurece a imagem sem reduzir a luz do painel. Pode não cobrir jogos em tela cheia exclusiva.</p>
+  </section>
+</div>
+
+<div class="aba" id="aba-mais">
+
   <section>
     <h2>Volume por programa</h2>
     <div id="appsAudio"></div>
@@ -226,11 +252,6 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
     <h2>Saída de áudio</h2>
     <div class="grade" id="saidas"></div>
     <p class="dica" id="saidasMsg"></p>
-  </section>
-
-  <section>
-    <h2>Seus aplicativos</h2>
-    <div class="grade c2" id="atalhos"></div>
   </section>
 
   <section>
@@ -277,6 +298,7 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
 <nav id="abas" aria-label="Seções">
   <button class="on" data-aba="inicio"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span>Início</span></button>
   <button data-aba="controle"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg><span>Controle</span></button>
+  <button data-aba="pc"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="3" width="18" height="13" rx="2"/><path d="M8 21h8m-4-5v5M7 7h10"/></svg><span>PC</span></button>
   <button data-aba="arquivos"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V3m-5 5 5-5 5 5M4 15v6h16v-6"/></svg><span>Arquivos</span></button>
   <button data-aba="mais"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>Mais</span></button>
 </nav>
@@ -641,6 +663,70 @@ $('#formArquivos').addEventListener('submit', async evento => {
     enviandoArquivos = false; entradaArquivos.disabled = false; $('#enviarArquivos').disabled = true;
   }
 });
+
+let monitoresCarregando = false;
+let monitoresAjustando = false;
+async function pedirMonitores(rota, corpo) {
+  if (!token) { pedirToken(); return null; }
+  const resposta = await fetch('/api/' + rota, {method:'POST', headers:{'Content-Type':'application/json','X-Token':token}, body:JSON.stringify(corpo || {})});
+  const dados = await resposta.json();
+  if (resposta.status === 401) { pedirToken('Confira o token para controlar os monitores.'); return null; }
+  if (!resposta.ok) throw new Error(dados.msg || 'Não foi possível consultar o monitor.');
+  return dados;
+}
+function desenharMonitores(itens) {
+  $('#controlesMonitores').replaceChildren(...itens.map(item => {
+    const caixa = document.createElement('div');
+    const rotulo = document.createElement('div'); rotulo.className = 'rotulo';
+    const nome = document.createElement('b'); nome.textContent = item.nome;
+    const valor = document.createElement('span'); valor.textContent = item.nivel + '%';
+    rotulo.append(nome, valor);
+    const descricao = document.createElement('small');
+    descricao.textContent = item.tipo === 'real' ? 'Brilho real do monitor' : 'Escurecimento por software';
+    const slider = document.createElement('input');
+    slider.type = 'range'; slider.min = 20; slider.max = 100; slider.value = Math.max(20, item.nivel);
+    slider.setAttribute('aria-label', item.nome + ' — ' + descricao.textContent);
+    slider.oninput = () => { valor.textContent = slider.value + '%'; };
+    // Envia somente ao soltar o controle, sem enfileirar comandos DDC/CI.
+    slider.onchange = async () => {
+      if (monitoresAjustando) { slider.value = Math.max(20, item.nivel); valor.textContent = item.nivel + '%'; return; }
+      monitoresAjustando = true;
+      document.querySelectorAll('#controlesMonitores input').forEach(x => x.disabled = true);
+      $('#mensagemMonitores').textContent = 'Ajustando ' + item.nome + '…';
+      try {
+        const dados = await pedirMonitores('monitor_brilho', {id:item.id, tipo:item.tipo, nivel:Number(slider.value)});
+        if (dados) { desenharMonitores(dados.itens); $('#mensagemMonitores').textContent = 'Monitor ajustado.'; }
+      } catch (erro) {
+        slider.value = Math.max(20, item.nivel); valor.textContent = item.nivel + '%';
+        $('#mensagemMonitores').textContent = erro.message;
+      } finally {
+        monitoresAjustando = false;
+        document.querySelectorAll('#controlesMonitores input').forEach(x => x.disabled = false);
+      }
+    };
+    caixa.append(rotulo, descricao, slider); return caixa;
+  }));
+}
+async function carregarMonitores() {
+  if (monitoresCarregando || monitoresAjustando) return;
+  monitoresCarregando = true; $('#atualizarMonitores').disabled = true;
+  $('#mensagemMonitores').textContent = 'Consultando as telas…';
+  try {
+    const dados = await pedirMonitores('monitores');
+    if (dados) { desenharMonitores(dados.itens); $('#mensagemMonitores').textContent = dados.itens.length ? 'Controles independentes de 20% a 100%.' : 'Nenhum monitor encontrado.'; }
+  } catch (erro) { $('#mensagemMonitores').textContent = erro.message; }
+  finally { monitoresCarregando = false; $('#atualizarMonitores').disabled = false; }
+}
+$('#atualizarMonitores').onclick = carregarMonitores;
+$('#limparMonitores').onclick = async () => {
+  if (monitoresAjustando || monitoresCarregando) return;
+  $('#limparMonitores').disabled = true;
+  try {
+    const dados = await pedirMonitores('monitores_limpar');
+    if (dados) { aviso(dados.msg); await carregarMonitores(); }
+  } catch (erro) { $('#mensagemMonitores').textContent = erro.message; }
+  finally { $('#limparMonitores').disabled = false; }
+};
 </script>
 </body>
 </html>
