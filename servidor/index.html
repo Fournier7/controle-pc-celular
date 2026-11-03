@@ -545,7 +545,7 @@ async function carregarModos() {
   const d = await dados('modos');
   if (d) $('#modos').replaceChildren(...d.itens.map((n, i) => { const b = document.createElement('button'); b.textContent = n; b.dataset.modo = i; return b; }));
 }
-$('#modos').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.textContent === 'Filme' && !confirm('Abrir o Stremio e fechar as janelas visíveis do Firefox e Spotify? Salve seu trabalho antes. O volume será mantido.')) return; enviar('modo', {i: +b.dataset.modo}); });
+$('#modos').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; enviar('modo', {i: +b.dataset.modo}); });
 
 async function carregarApps() {
   const d = await dados('apps_audio');

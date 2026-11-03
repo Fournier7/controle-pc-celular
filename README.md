@@ -82,6 +82,8 @@ A credencial vem da variável de ambiente `PC_TOKEN` ou de `servidor/token.txt`,
 | `parar.bat` | Encerra o processo que escuta a porta 5000. |
 | `remover_inicio.bat` | Remove o atalho de inicialização. |
 
+O servidor impede novas cópias simultâneas na mesma sessão do Windows. Para carregar mudanças no Python, execute `parar.bat` e só então `iniciar.bat`; abrir o iniciador novamente não atualiza uma instância que já está rodando.
+
 Execute `iniciar.bat` pelo menos uma vez antes de configurar o início automático. Depois de reiniciar o computador, o app só conecta se o servidor também estiver rodando.
 
 ## Enviar arquivos do celular
@@ -123,10 +125,10 @@ Os modos ficam em `servidor/modos.json`:
 | --- | --- |
 | **Jogar** | Abre Riot Client e Discord. |
 | **Programar** | Abre Firefox, PyCharm e Claude. |
-| **Filme** | Abre Stremio, mantém o volume e solicita o fechamento normal das janelas visíveis do Firefox e Spotify, após confirmação na interface. |
+| **Filme** | Abre Stremio, mantém o volume e solicita o fechamento normal das janelas visíveis do Firefox, Spotify, ChatGPT e Claude, sem confirmação adicional. |
 | **Dormir** | Ajusta o volume para 15% e agenda o desligamento em 30 minutos. |
 
-O modo Filme usa uma ação própria no servidor (`"acao": "cinema"`). Se não encontrar o Stremio, não solicita o fechamento das janelas. Ele não encerra outros programas, como Rainmeter e utilitários de otimização. Firefox e Spotify são fechados normalmente, sem matar processos à força; avisos de trabalho não salvo podem exigir interação no PC.
+O modo Filme usa uma ação própria no servidor (`"acao": "cinema"`). O servidor tenta primeiro instalações conhecidas do Stremio e depois o Menu Iniciar. Se não conseguir iniciá-lo, não solicita o fechamento das janelas. Ele não encerra outros programas, como Rainmeter e utilitários de otimização. Firefox, Spotify, ChatGPT e Claude são fechados normalmente, sem matar processos à força; avisos de trabalho não salvo podem exigir interação no PC.
 
 ## Recursos opcionais
 
@@ -198,6 +200,9 @@ Com as dependências instaladas, na raiz do projeto:
 ```powershell
 python -m py_compile servidor/app.py
 python tests/testar_envio.py
+python tests/testar_cache_apps.py
+python tests/testar_filme.py
+python tests/testar_instancia.py
 ```
 
 Os testes de upload extraem as rotas do código sem iniciar o controle do PC nem ler a credencial local. Verificam autenticação, método HTTP, formatos, nomes, duplicatas, limite e remoção de arquivos parciais. Não substituem os testes de áudio, mouse e envio real pelo celular.

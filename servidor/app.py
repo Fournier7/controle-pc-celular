@@ -456,13 +456,33 @@ def definir_volume(nivel):
         comtypes.CoUninitialize()
 
 
+def abrir_stremio():
+    """Tenta instalações conhecidas; nenhum caminho vem do celular."""
+    local = os.environ.get("LOCALAPPDATA")
+    if local:
+        raiz = Path(local)
+        candidatos = (
+            raiz / "Programs" / "Stremio" / "stremio-shell-ng.exe",
+            raiz / "Programs" / "Stremio" / "stremio.exe",
+            raiz / "Smart Code ltd" / "Stremio-4" / "stremio.exe",
+        )
+        for executavel in candidatos:
+            if executavel.is_file():
+                try:
+                    subprocess.Popen([str(executavel)], cwd=str(executavel.parent))
+                    return True
+                except OSError:
+                    continue
+    return abrir_app("Stremio")
+
+
 def iniciar_filme():
     """Abre o Stremio e pede o fechamento normal das janelas permitidas."""
     import ctypes
     from ctypes import wintypes
 
     # Lista fixa: nunca recebe nomes de processos enviados pelo celular.
-    permitidos = {"firefox.exe", "spotify.exe"}
+    permitidos = {"firefox.exe", "spotify.exe", "chatgpt.exe", "claude.exe"}
     usuario = ctypes.WinDLL("user32", use_last_error=True)
     callback_tipo = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
     usuario.EnumWindows.argtypes = [callback_tipo, wintypes.LPARAM]
@@ -477,8 +497,8 @@ def iniciar_filme():
     usuario.PostMessageW.restype = wintypes.BOOL
 
     # Se não encontrar o Stremio, não fecha nenhuma janela.
-    if not abrir_app("Stremio"):
-        return jsonify(msg="Stremio não encontrado no Menu Iniciar. Nenhuma janela foi fechada."), 404
+    if not abrir_stremio():
+        return jsonify(msg="Não consegui abrir o Stremio. Confira a instalação no PC; nenhuma janela foi fechada."), 404
 
     @callback_tipo
     def visitar(janela, parametro):
@@ -494,8 +514,9 @@ def iniciar_filme():
             pass
         return True
 
-    usuario.EnumWindows(visitar, 0)
-    return jsonify(msg="Stremio aberto. Fechamento solicitado às janelas do Firefox e Spotify; volume mantido.")
+    if not usuario.EnumWindows(visitar, 0):
+        return jsonify(msg="Stremio iniciado, mas não consegui listar as janelas do Windows."), 500
+    return jsonify(msg="Stremio iniciado. Fechamento solicitado às janelas de Firefox, Spotify, ChatGPT e Claude; volume mantido.")
 
 
 def executar_modo(passos):
@@ -532,7 +553,11 @@ def rodar_modo():
     if not isinstance(i, int) or not 0 <= i < len(lista):
         return jsonify(msg="Modo inválido"), 400
     if lista[i].get("acao") == "cinema":
-        return iniciar_filme()
+        try:
+            return iniciar_filme()
+        except Exception:
+            app.logger.exception("Falha ao executar o modo Filme")
+            return jsonify(msg="Falha no modo Filme. Confira o erro na janela do servidor."), 500
     threading.Thread(target=executar_modo, args=(lista[i].get("passos", []),), daemon=True).start()
     return jsonify(msg=f"Modo {lista[i]['nome']} ativado")
 
@@ -651,7 +676,33 @@ def receber_arquivo():
         return jsonify(msg="Não foi possível salvar. Confira o espaço em disco e as permissões da pasta."), 500
 
 
+def garantir_instancia_unica():
+    """Impede cópias simultâneas do servidor na mesma sessão do Windows."""
+    import ctypes
+    from ctypes import wintypes
+
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.CreateMutexW.argtypes = [wintypes.LPVOID, wintypes.BOOL, wintypes.LPCWSTR]
+    kernel.CreateMutexW.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel.CloseHandle.restype = wintypes.BOOL
+    ctypes.set_last_error(0)
+    identificador = kernel.CreateMutexW(None, False, "Local\\ControlePCServidorPorta5000")
+    erro = ctypes.get_last_error()
+    if not identificador:
+        raise OSError(erro, "Não foi possível reservar a instância do servidor")
+    if erro == 183:  # ERROR_ALREADY_EXISTS
+        kernel.CloseHandle(identificador)
+        return None
+    # O Windows libera o identificador ao encerrar este processo.
+    return identificador
+
+
 if __name__ == "__main__":
+    instancia_servidor = garantir_instancia_unica()
+    if instancia_servidor is None:
+        print("O servidor já está em execução. Para atualizar, use parar.bat antes de iniciar.bat.")
+        raise SystemExit(0)
     print(f"\nAbra no celular: http://{ip_local()}:{PORTA}")
     print(f"Token: {TOKEN}\n")
     # Prepara os atalhos da Store sem atrasar a abertura do servidor.

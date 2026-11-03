@@ -2,6 +2,18 @@
 
 ## 2026-11-02
 
+### Corrigido: modo Filme e reinicialização
+
+- Stremio iniciado primeiro por caminhos locais conhecidos, com diretório de trabalho correto e busca pelo Menu Iniciar como alternativa.
+- Retirada a confirmação do modo Filme a pedido do usuário.
+- Fechamento normal limitado às janelas visíveis de Firefox, Spotify, ChatGPT e Claude; volume e outros programas preservados.
+- Erros do modo Filme passam a produzir uma mensagem na interface e diagnóstico no servidor.
+- Acrescentada proteção contra múltiplas instâncias na mesma sessão do Windows. É necessário parar o servidor antigo antes de carregar código atualizado.
+- Funcionamento do modo Filme confirmado pelo usuário após encerrar cópias antigas e reiniciar o servidor.
+- Testes isolados de abertura do Stremio e proteção de instância única adicionados.
+
+
+
 ### Otimizado
 
 - Catálogo de aplicativos da Microsoft Store preparado em segundo plano ao iniciar o servidor e reutilizado entre atalhos.
