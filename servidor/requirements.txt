@@ -4,3 +4,8 @@ psutil
 pillow
 pyperclip
 pycaw==20240210
+fastapi
+uvicorn
+websockets
+a2wsgi
+mss

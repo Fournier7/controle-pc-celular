@@ -10,6 +10,12 @@ import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Build;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
+import android.webkit.JavascriptInterface;
+import android.widget.FrameLayout;
 import android.text.InputType;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -25,6 +31,11 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> retornoArquivos;
     private static final int ESCOLHER_ARQUIVOS = 1001;
     private WebView web;
+    private FrameLayout raiz;
+    private View telaCheia;
+    private WebChromeClient.CustomViewCallback retornoTelaCheia;
+    private int barrasAnteriores;
+    private int recorteAnterior;
     private SharedPreferences prefs;
     private boolean dialogoAberto = false;
 
@@ -35,7 +46,23 @@ public class MainActivity extends Activity {
 
         web = new WebView(this);
         web.setBackgroundColor(Color.parseColor("#0A0A0B"));
-        setContentView(web);
+        web.addJavascriptInterface(new Object() {
+            @JavascriptInterface
+            public void mostrarTeclado() {
+                runOnUiThread(() -> {
+                    if (telaCheia == null || !hasWindowFocus()) return;
+                    View foco = raiz.findFocus();
+                    InputMethodManager teclado = getSystemService(InputMethodManager.class);
+                    if (foco != null && teclado != null && teclado.isActive(foco)) {
+                        teclado.showSoftInput(foco, InputMethodManager.SHOW_IMPLICIT);
+                    }
+                });
+            }
+        }, "ControlePC");
+        raiz = new FrameLayout(this);
+        raiz.setBackgroundColor(Color.BLACK);
+        raiz.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(raiz);
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -43,6 +70,32 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
 
         web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onShowCustomView(View view, CustomViewCallback retorno) {
+                if (telaCheia != null) {
+                    retorno.onCustomViewHidden();
+                    return;
+                }
+                telaCheia = view;
+                retornoTelaCheia = retorno;
+                View decor = getWindow().getDecorView();
+                barrasAnteriores = decor.getSystemUiVisibility();
+                if (Build.VERSION.SDK_INT >= 28) {
+                    WindowManager.LayoutParams atributos = getWindow().getAttributes();
+                    recorteAnterior = atributos.layoutInDisplayCutoutMode;
+                    atributos.layoutInDisplayCutoutMode =
+                            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+                    getWindow().setAttributes(atributos);
+                }
+                raiz.addView(view, new FrameLayout.LayoutParams(-1, -1));
+                ocultarBarras();
+            }
+
+            @Override
+            public void onHideCustomView() {
+                sairDaTelaCheia();
+            }
+
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> retorno,
                                              FileChooserParams parametros) {
@@ -104,6 +157,7 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        sairDaTelaCheia();
         if (retornoArquivos != null) {
             retornoArquivos.onReceiveValue(null);
             retornoArquivos = null;
@@ -155,7 +209,36 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (web.canGoBack()) web.goBack();
+        if (telaCheia != null) sairDaTelaCheia();
+        else if (web.canGoBack()) web.goBack();
         else super.onBackPressed();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean temFoco) {
+        super.onWindowFocusChanged(temFoco);
+        if (temFoco && telaCheia != null) ocultarBarras();
+    }
+
+    private void ocultarBarras() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
+    }
+
+    private void sairDaTelaCheia() {
+        if (telaCheia == null) return;
+        raiz.removeView(telaCheia);
+        telaCheia = null;
+        getWindow().getDecorView().setSystemUiVisibility(barrasAnteriores);
+        if (Build.VERSION.SDK_INT >= 28) {
+            WindowManager.LayoutParams atributos = getWindow().getAttributes();
+            atributos.layoutInDisplayCutoutMode = recorteAnterior;
+            getWindow().setAttributes(atributos);
+        }
+        WebChromeClient.CustomViewCallback retorno = retornoTelaCheia;
+        retornoTelaCheia = null;
+        retorno.onCustomViewHidden();
     }
 }

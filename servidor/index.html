@@ -45,7 +45,6 @@ input[type=range]{width:100%;min-height:44px;padding:0;background:none;accent-co
 .mesa{display:flex;gap:10px;margin-bottom:10px}
 .area{height:220px;border-radius:18px;background:var(--btn);touch-action:none;display:grid;place-items:center;text-align:center;padding:12px;color:var(--muted);font-size:.9rem;user-select:none}
 #pad{flex:1}.faixa{width:58px;flex:none;padding:0}
-#tela{width:100%;border-radius:16px;display:none;background:#000;margin-bottom:10px}
 #abas{position:fixed;left:50%;transform:translateX(-50%);bottom:max(14px,env(safe-area-inset-bottom));width:min(calc(100% - 36px),400px);display:flex;gap:4px;padding:6px;border-radius:24px;background:var(--card);box-shadow:0 2px 6px rgba(20,37,42,.12),0 10px 28px rgba(20,37,42,.14);z-index:5}
 #abas button{flex:1;min-height:48px;border-radius:18px;background:transparent;color:var(--muted)}
 #abas button.on{background:var(--accent);color:var(--on);box-shadow:0 0 18px rgba(229,32,46,.4)}
@@ -118,6 +117,51 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
 
 @media(max-width:440px){#atalhos button{gap:8px}#atalhos button::after{display:none}}
 #atalhos .atalho-nome{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#desktopRemoto{width:min(96vw,1280px);max-width:none;max-height:94vh;padding:12px}
+.desktop-barra{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.desktop-barra button{min-height:42px;padding:8px 12px}
+#estadoDesktop{flex:1}
+#quadroDesktop{width:auto;height:auto;max-width:100%;max-height:64vh;margin:auto;touch-action:none;user-select:none}
+#quadroDesktop:not([hidden]){display:block}
+#direitoDesktop[aria-pressed=true]{outline:2px solid currentColor}
+#textoDesktop{width:100%;margin-top:8px}
+#menuDesktop,#ajusteDesktop{display:none}
+#desktopRemoto.tela-cheia[open]{
+  position:fixed;inset:0;margin:0;width:100%;height:100vh;height:100dvh;
+  max-width:none;max-height:none;border:0;border-radius:0;padding:0;
+  box-sizing:border-box;overflow:hidden;background:#000;
+}
+#desktopRemoto.tela-cheia #conteudoDesktop{position:absolute;inset:0;background:#000}
+#desktopRemoto.tela-cheia .desktop-quadro{position:absolute;inset:0}
+#desktopRemoto.tela-cheia #quadroDesktop{
+  width:100%;height:100%;max-width:none;max-height:none;object-fit:contain;
+}
+#desktopRemoto.tela-cheia.preencher-imagem #quadroDesktop{object-fit:cover}
+.desktop-rolagem{display:flex;gap:6px;justify-content:flex-end;margin-top:6px}
+#desktopRemoto.tela-cheia .desktop-rolagem{
+  position:absolute;z-index:1;top:50%;right:max(8px,env(safe-area-inset-right));
+  transform:translateY(-50%);flex-direction:column;margin:0;
+}
+.desktop-rolagem button{min-width:44px;min-height:44px;background:#121923cc}
+#desktopRemoto.tela-cheia #menuDesktop{
+  display:block;position:absolute;z-index:2;
+  top:max(8px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));
+  min-width:44px;min-height:44px;background:#121923cc;
+}
+#desktopRemoto.tela-cheia #conteudoDesktop > .desktop-barra{
+  display:none;position:absolute;z-index:1;margin:0;padding:8px;
+  background:#121923e8;left:max(8px,env(safe-area-inset-left));right:64px;
+}
+#desktopRemoto.tela-cheia.menu-aberto #conteudoDesktop > .desktop-barra{display:flex}
+#desktopRemoto.tela-cheia #conteudoDesktop > .desktop-topo{top:max(8px,env(safe-area-inset-top))}
+#desktopRemoto.tela-cheia #conteudoDesktop > .desktop-comandos{bottom:8px}
+#desktopRemoto.tela-cheia #ajusteDesktop{display:inline-block}
+#desktopRemoto.tela-cheia:not(.menu-aberto) #teclasDesktop:not([hidden]){
+  position:absolute;bottom:0;left:0;width:1px;height:1px;overflow:hidden;opacity:0;
+}
+#desktopRemoto.tela-cheia #teclasDesktop{position:absolute;bottom:8px;left:8px;right:8px}
+#desktopRemoto.tela-cheia #estadoDesktop{flex:0 1 auto}
+#desktopRemoto.tela-cheia:not(.menu-aberto):not(.conectado) #conteudoDesktop > .desktop-topo{display:flex}
 </style>
 </head>
 <body>
@@ -265,11 +309,7 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
 
   <section>
     <h2>Tela do PC</h2>
-    <img id="tela" alt="Captura da tela do PC">
-    <div class="grade c2">
-      <button id="verTela">Atualizar</button>
-      <button id="autoTela">Auto: desligado</button>
-    </div>
+    <button id="abrirDesktop" type="button">Abrir tela ao vivo</button>
   </section>
 
   <section>
@@ -294,6 +334,38 @@ details{font-size:.8rem;color:var(--muted);margin-top:12px}summary{cursor:pointe
   </section>
 </div>
 </main>
+
+<dialog id="desktopRemoto"><div id="conteudoDesktop">
+  <button id="menuDesktop" type="button" aria-label="Controles da transmissão" aria-expanded="false">⋯</button>
+  <div class="desktop-barra desktop-topo">
+    <span id="estadoDesktop" role="status">Conectando…</span>
+    <button id="telaCheiaDesktop" type="button" aria-pressed="false">Tela cheia</button>
+    <button id="fecharDesktop" type="button">Fechar</button>
+  </div>
+  <div class="desktop-quadro">
+    <img id="quadroDesktop" alt="Tela ao vivo do PC" draggable="false" hidden>
+  </div>
+  <div class="desktop-rolagem" role="group" aria-label="Rolagem">
+    <button type="button" data-desktop-rolar="1" aria-label="Rolar para cima">↑</button>
+    <button type="button" data-desktop-rolar="-1" aria-label="Rolar para baixo">↓</button>
+  </div>
+  <div class="desktop-barra desktop-comandos">
+    <button type="button" id="ajusteDesktop">Preencher tela</button>
+    <button type="button" id="touchpadDesktop" aria-pressed="true">Touchpad ligado</button>
+    <button type="button" id="direitoDesktop" aria-pressed="false">Clique direito</button>
+    <button type="button" id="tecladoDesktop">Teclado</button>
+  </div>
+  <div id="teclasDesktop" hidden>
+    <input id="textoDesktop" aria-label="Digitar no PC" placeholder="Digitar no PC"
+           autocomplete="off" autocapitalize="off" spellcheck="false">
+    <div class="desktop-barra">
+      <button type="button" data-desktop-tecla="Escape">Esc</button>
+      <button type="button" data-desktop-tecla="Tab">Tab</button>
+      <button type="button" data-desktop-tecla="Backspace">Apagar</button>
+      <button type="button" data-desktop-tecla="Enter">Enter</button>
+    </div>
+  </div>
+</div></dialog>
 
 <nav id="abas" aria-label="Seções">
   <button class="on" data-aba="inicio"><svg class="icone-ui" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m3 10 9-7 9 7M5 9v12h5v-7h4v7h5V9"/></svg><span>Início</span></button>
@@ -429,15 +501,49 @@ pad.addEventListener('pointerup', () => {
 });
 pad.addEventListener('pointercancel', () => { prev = null; });
 
-let fy = null, fa = 0;
-faixa.addEventListener('pointerdown', e => { faixa.setPointerCapture(e.pointerId); fy = e.clientY; });
-faixa.addEventListener('pointermove', e => {
-  if (fy === null) return;
-  fa += (e.clientY - fy) / 12; fy = e.clientY;
-  const n = Math.trunc(fa);
-  if (n) { fa -= n; mouse({rolar: n}); }
+let dedoRolagem = null, yRolagem = 0, rolagemPendente = 0;
+let quadroRolagem = 0, enviandoRolagem = false;
+
+const fracoesPorPassoRolagem = 40;
+
+function agendarRolagem() {
+  if (quadroRolagem || enviandoRolagem || Math.abs(rolagemPendente) < 1 / fracoesPorPassoRolagem) return;
+  quadroRolagem = requestAnimationFrame(async () => {
+    quadroRolagem = 0;
+    const passos = Math.trunc(rolagemPendente * fracoesPorPassoRolagem) / fracoesPorPassoRolagem;
+    if (!passos) return;
+    rolagemPendente -= passos;
+    enviandoRolagem = true;
+    const ok = await mouse({rolar: passos});
+    enviandoRolagem = false;
+    if (!ok) rolagemPendente = 0;
+    agendarRolagem();
+  });
+}
+
+faixa.addEventListener('pointerdown', e => {
+  if (dedoRolagem !== null) return;
+  faixa.setPointerCapture(e.pointerId);
+  dedoRolagem = e.pointerId;
+  yRolagem = e.clientY;
 });
-faixa.addEventListener('pointerup', () => { fy = null; });
+faixa.addEventListener('pointermove', e => {
+  if (e.pointerId !== dedoRolagem) return;
+  const deslocamento = (e.clientY - yRolagem) / 12;
+  yRolagem = e.clientY;
+  rolagemPendente = Math.max(-12, Math.min(12, rolagemPendente + deslocamento));
+  agendarRolagem();
+});
+faixa.addEventListener('pointerup', e => {
+  if (e.pointerId === dedoRolagem) dedoRolagem = null;
+});
+function cancelarRolagem(e) {
+  if (e.pointerId !== dedoRolagem) return;
+  dedoRolagem = null;
+  rolagemPendente = 0;
+}
+faixa.addEventListener('pointercancel', cancelarRolagem);
+faixa.addEventListener('lostpointercapture', cancelarRolagem);
 
 document.addEventListener('click', e => {
   const m = e.target.closest('[data-mouse]'); if (m) mouse({clique: m.dataset.mouse});
@@ -454,25 +560,6 @@ $('#vol').addEventListener('input', e => {
 $('#atalhos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) enviar('abrir', {i: +b.dataset.i}); });
 $('#copiar').onclick = () => enviar('area', {texto: $('#area').value});
 $('#colar').onclick = () => enviar('area', {texto: $('#area').value, colar: true});
-
-async function capturar() {
-  try {
-    const r = await fetch('/api/tela', {method: 'POST', headers: {'X-Token': token}});
-    if (!r.ok) { aviso('Não foi possível capturar a tela', true); return; }
-    const img = $('#tela'), antigo = img.src;
-    img.src = URL.createObjectURL(await r.blob());
-    img.style.display = 'block';
-    if (antigo.startsWith('blob:')) URL.revokeObjectURL(antigo);
-  } catch (e) { aviso('PC sem resposta', true); }
-}
-let telaAuto = null;
-$('#verTela').onclick = capturar;
-$('#autoTela').onclick = e => {
-  if (telaAuto) { clearInterval(telaAuto); telaAuto = null; e.target.textContent = 'Auto: desligado'; return; }
-  capturar();
-  telaAuto = setInterval(() => { if (!document.hidden) capturar(); }, 3000);
-  e.target.textContent = 'Auto: ligado';
-};
 
 const ROTULOS = [['cpu', 'Processador'], ['ram', 'Memória'], ['disco', 'Disco']];
 $('#status').innerHTML = ROTULOS.map(([k, n]) =>
@@ -727,6 +814,266 @@ $('#limparMonitores').onclick = async () => {
   } catch (erro) { $('#mensagemMonitores').textContent = erro.message; }
   finally { $('#limparMonitores').disabled = false; }
 };
+const desktopRemoto = $('#desktopRemoto'), quadroDesktop = $('#quadroDesktop');
+const estadoDesktop = $('#estadoDesktop'), direitoDesktop = $('#direitoDesktop');
+const textoDesktop = $('#textoDesktop');
+let conexaoDesktop, urlDesktop, ponteiroDesktop, ultimoDesktop = 0;
+let aberturaDesktop = 0;
+const touchpadDesktop = $('#touchpadDesktop');
+touchpadDesktop.onclick = () => {
+  const ativo = touchpadDesktop.getAttribute('aria-pressed') !== 'true';
+  touchpadDesktop.setAttribute('aria-pressed', String(ativo));
+  touchpadDesktop.textContent = ativo ? 'Touchpad ligado' : 'Toque direto ligado';
+  definirMenuDesktop(false);
+};
+
+function enviarDesktop(acao, dados = {}) {
+  if (conexaoDesktop?.readyState !== WebSocket.OPEN) return;
+  if (conexaoDesktop.bufferedAmount > 8192 && acao.startsWith('mover')) return;
+  conexaoDesktop.send(JSON.stringify({acao, ...dados}));
+}
+
+function liberarDesktop() {
+  enviarDesktop('soltar');
+  ponteiroDesktop = null;
+}
+
+async function abrirDesktop() {
+  if (!token) { pedirToken(); return; }
+  const abertura = ++aberturaDesktop;
+  estadoDesktop.textContent = 'Conectando…';
+  desktopRemoto.classList.remove('conectado');
+  quadroDesktop.hidden = true;
+  desktopRemoto.showModal();
+  desktopRemoto.classList.remove('preencher-imagem');
+  ajusteDesktop.textContent = 'Preencher tela';
+  definirTelaCheiaDesktop(true);
+  conteudoDesktop.requestFullscreen?.().catch(() => {});
+  try {
+    const r = await fetch('/api/desktop/sessao', {
+      method: 'POST', headers: {'X-Token': token}, cache: 'no-store'
+    });
+    if (!r.ok) throw new Error(r.status === 401 ? 'Token incorreto' : 'Conexão indisponível');
+    const {bilhete} = await r.json();
+    if (abertura !== aberturaDesktop || !desktopRemoto.open) return;
+    const endereco = new URL('/desktop/ws', location.href);
+    endereco.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(endereco);
+    conexaoDesktop = ws;
+    ws.binaryType = 'blob';
+    ws.onopen = () => { ws.send(bilhete); ws.send('quadro'); };
+    ws.onmessage = ({data}) => {
+      if (conexaoDesktop !== ws) return;
+      if (typeof data === 'string') {
+        const {teclado} = JSON.parse(data);
+        if (teclado === true && !desktopRemoto.classList.contains('menu-aberto')) {
+          $('#teclasDesktop').hidden = false;
+          textoDesktop.focus({preventScroll: true});
+          window.ControlePC?.mostrarTeclado();
+        } else if (teclado === false && document.activeElement === textoDesktop) {
+          textoDesktop.blur();
+          $('#teclasDesktop').hidden = true;
+        }
+        return;
+      }
+      if (!(data instanceof Blob)) return;
+      if (urlDesktop) URL.revokeObjectURL(urlDesktop);
+      urlDesktop = URL.createObjectURL(data);
+      quadroDesktop.onload = () => {
+        if (conexaoDesktop !== ws || ws.readyState !== WebSocket.OPEN) return;
+        quadroDesktop.hidden = false;
+        estadoDesktop.textContent = 'Ao vivo';
+        desktopRemoto.classList.add('conectado');
+        ws.send('quadro');
+      };
+      quadroDesktop.onerror = () => ws.close();
+      quadroDesktop.src = urlDesktop;
+    };
+    ws.onclose = ({code}) => {
+      if (conexaoDesktop !== ws) return;
+      conexaoDesktop = null;
+      ponteiroDesktop = null;
+      desktopRemoto.classList.remove('conectado');
+      estadoDesktop.textContent = ({
+        1008: 'Sessão recusada. Feche e tente novamente.',
+        1011: 'Falha na captura. Confira a tela do PC.',
+        1013: 'Outra tela remota está em uso.'
+      })[code] || 'Conexão encerrada. Feche e abra novamente.';
+    };
+  } catch (erro) {
+    if (abertura === aberturaDesktop) estadoDesktop.textContent = erro.message;
+  }
+}
+
+$('#abrirDesktop').onclick = abrirDesktop;
+$('#fecharDesktop').onclick = () => desktopRemoto.close();
+const telaCheiaDesktop = $('#telaCheiaDesktop');
+const menuDesktop = $('#menuDesktop');
+const ajusteDesktop = $('#ajusteDesktop');
+const conteudoDesktop = $('#conteudoDesktop');
+function definirMenuDesktop(aberto) {
+  desktopRemoto.classList.toggle('menu-aberto', aberto);
+  menuDesktop.setAttribute('aria-expanded', String(aberto));
+}
+menuDesktop.onclick = () => definirMenuDesktop(!desktopRemoto.classList.contains('menu-aberto'));
+ajusteDesktop.onclick = () => {
+  const preenchida = desktopRemoto.classList.toggle('preencher-imagem');
+  ajusteDesktop.textContent = preenchida ? 'Mostrar tela inteira' : 'Preencher tela';
+  definirMenuDesktop(false);
+};
+function definirTelaCheiaDesktop(ativa) {
+  liberarDesktop();
+  definirMenuDesktop(false);
+  desktopRemoto.classList.toggle('tela-cheia', ativa);
+  telaCheiaDesktop.setAttribute('aria-pressed', String(ativa));
+  telaCheiaDesktop.textContent = ativa ? 'Sair da tela cheia' : 'Tela cheia';
+}
+telaCheiaDesktop.onclick = () => {
+  const ativa = !desktopRemoto.classList.contains('tela-cheia');
+  definirTelaCheiaDesktop(ativa);
+  if (ativa) conteudoDesktop.requestFullscreen?.().catch(() => {});
+  else if (document.fullscreenElement === conteudoDesktop) document.exitFullscreen().catch(() => {});
+};
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && desktopRemoto.open) definirTelaCheiaDesktop(false);
+});
+desktopRemoto.addEventListener('close', () => {
+  aberturaDesktop++;
+  definirTelaCheiaDesktop(false);
+  if (document.fullscreenElement === conteudoDesktop) document.exitFullscreen().catch(() => {});
+  conexaoDesktop?.close();
+  conexaoDesktop = null;
+  quadroDesktop.removeAttribute('src');
+  if (urlDesktop) URL.revokeObjectURL(urlDesktop);
+  urlDesktop = null;
+  direitoDesktop.setAttribute('aria-pressed', 'false');
+  $('#teclasDesktop').hidden = true;
+  textoDesktop.value = '';
+});
+window.addEventListener('blur', liberarDesktop);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && desktopRemoto.open) desktopRemoto.close();
+});
+
+function pontoDesktop(e, limitar = true) {
+  const area = quadroDesktop.getBoundingClientRect();
+  const {naturalWidth, naturalHeight} = quadroDesktop;
+  if (!naturalWidth || !naturalHeight) return null;
+  const escala = getComputedStyle(quadroDesktop).objectFit === 'cover' ? Math.max : Math.min;
+  const fator = escala(area.width / naturalWidth, area.height / naturalHeight);
+  const largura = naturalWidth * fator, altura = naturalHeight * fator;
+  const x = (e.clientX - area.left - (area.width - largura) / 2) / largura;
+  const y = (e.clientY - area.top - (area.height - altura) / 2) / altura;
+  if (!limitar && (x < 0 || x > 1 || y < 0 || y > 1)) return null;
+  return {
+    x: Math.max(0, Math.min(1, x)),
+    y: Math.max(0, Math.min(1, y))
+  };
+}
+
+quadroDesktop.addEventListener('pointerdown', e => {
+  if (ponteiroDesktop || (e.button !== 0 && e.button !== 2)) return;
+  const relativo = e.pointerType === 'touch' && touchpadDesktop.getAttribute('aria-pressed') === 'true';
+  const ponto = pontoDesktop(e, false);
+  if (!relativo && !ponto) return;
+  if (desktopRemoto.classList.contains('menu-aberto')) {
+    definirMenuDesktop(false);
+    return;
+  }
+  e.preventDefault();
+  quadroDesktop.setPointerCapture(e.pointerId);
+  const botao = e.button === 2 || direitoDesktop.getAttribute('aria-pressed') === 'true'
+    ? 'direito' : 'esquerdo';
+  ponteiroDesktop = {id: e.pointerId, botao, x: e.clientX, y: e.clientY, arrastou: false, relativo};
+  direitoDesktop.setAttribute('aria-pressed', 'false');
+  if (!relativo) enviarDesktop('pressionar', {...ponto, botao});
+});
+quadroDesktop.addEventListener('pointermove', e => {
+  if (ponteiroDesktop?.id !== e.pointerId) return;
+  if (Math.hypot(e.clientX - ponteiroDesktop.x, e.clientY - ponteiroDesktop.y) > 8) {
+    ponteiroDesktop.arrastou = true;
+  }
+  if (performance.now() - ultimoDesktop < 24) return;
+  ultimoDesktop = performance.now();
+  if (ponteiroDesktop.relativo) {
+    if (ponteiroDesktop.arrastou) moverCursorDesktop(e);
+    return;
+  }
+  enviarDesktop('mover', pontoDesktop(e));
+});
+function moverCursorDesktop(e) {
+  const area = quadroDesktop.getBoundingClientRect();
+  const dx = (e.clientX - ponteiroDesktop.x) / area.width;
+  const dy = (e.clientY - ponteiroDesktop.y) / area.height;
+  ponteiroDesktop.x = e.clientX;
+  ponteiroDesktop.y = e.clientY;
+  if (dx || dy) enviarDesktop('mover_relativo', {
+    dx: Math.max(-1, Math.min(1, dx)),
+    dy: Math.max(-1, Math.min(1, dy))
+  });
+}
+
+quadroDesktop.addEventListener('pointerup', e => {
+  if (ponteiroDesktop?.id !== e.pointerId) return;
+  const botao = ponteiroDesktop.botao;
+  const verificarTeclado = e.pointerType === 'touch' && botao === 'esquerdo'
+    && !ponteiroDesktop.arrastou && Math.hypot(e.clientX - ponteiroDesktop.x, e.clientY - ponteiroDesktop.y) <= 8;
+  if (ponteiroDesktop.relativo) {
+    const deslocou = Math.hypot(e.clientX - ponteiroDesktop.x, e.clientY - ponteiroDesktop.y) > 8;
+    if (ponteiroDesktop.arrastou || deslocou) moverCursorDesktop(e);
+    else enviarDesktop('clicar_cursor', {botao});
+  } else {
+    enviarDesktop('liberar', {...pontoDesktop(e), botao, verificarTeclado});
+  }
+  ponteiroDesktop = null;
+});
+quadroDesktop.addEventListener('pointercancel', liberarDesktop);
+quadroDesktop.addEventListener('lostpointercapture', () => {
+  if (ponteiroDesktop) liberarDesktop();
+});
+quadroDesktop.addEventListener('contextmenu', e => e.preventDefault());
+direitoDesktop.onclick = () => {
+  direitoDesktop.setAttribute('aria-pressed', direitoDesktop.getAttribute('aria-pressed') !== 'true');
+  definirMenuDesktop(false);
+};
+desktopRemoto.querySelectorAll('[data-desktop-rolar]').forEach(b => {
+  b.onclick = () => enviarDesktop('rolar', {passos: Number(b.dataset.desktopRolar)});
+});
+desktopRemoto.querySelectorAll('[data-desktop-tecla]').forEach(b => {
+  b.onclick = () => enviarDesktop('tocar_tecla', {codigo: b.dataset.desktopTecla});
+});
+$('#tecladoDesktop').onclick = () => {
+  $('#teclasDesktop').hidden = !$('#teclasDesktop').hidden;
+  if (!$('#teclasDesktop').hidden) {
+    definirMenuDesktop(false);
+    textoDesktop.focus({preventScroll:true});
+  }
+};
+textoDesktop.addEventListener('input', e => {
+  if (e.isComposing) return;
+  const texto = textoDesktop.value;
+  textoDesktop.value = '';
+  if (texto) enviarDesktop('texto', {texto: texto.slice(0, 80)});
+  else if (e.inputType === 'deleteContentBackward') enviarDesktop('tocar_tecla', {codigo: 'Backspace'});
+});
+textoDesktop.addEventListener('compositionend', () => {
+  if (textoDesktop.value) enviarDesktop('texto', {texto: textoDesktop.value.slice(0, 80)});
+  textoDesktop.value = '';
+});
+textoDesktop.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.isComposing) {
+    e.preventDefault();
+    enviarDesktop('tocar_tecla', {codigo: 'Enter'});
+  }
+});
+for (const evento of ['keydown', 'keyup']) {
+  desktopRemoto.addEventListener(evento, e => {
+    if (e.target === textoDesktop || e.code === 'Escape' || e.code === 'Tab' || e.repeat) return;
+    if (!/^(Key[A-Z]|Digit[0-9]|Enter|Backspace|Space|Delete|Arrow(Up|Down|Left|Right)|(Shift|Control|Alt)(Left|Right))$/.test(e.code)) return;
+    e.preventDefault();
+    enviarDesktop(evento === 'keydown' ? 'tecla' : 'soltar_tecla', {codigo: e.code});
+  });
+}
 </script>
 </body>
 </html>

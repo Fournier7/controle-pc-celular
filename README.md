@@ -1,6 +1,6 @@
 # Controle do PC pelo celular
 
-Controle seu computador com Windows pelo celular na mesma rede Wi-Fi. Um servidor Python com Flask executa as ações no PC, uma interface web reúne os controles e um app Android com WebView permite acessar tudo em tela cheia.
+Controle seu computador com Windows pelo celular na mesma rede Wi-Fi. Um servidor Python com FastAPI e Flask executa as ações no PC, uma interface web reúne os controles e um app Android com WebView permite acessar tudo em tela cheia.
 
 O projeto tem interface em **grafite e azul**, com cinco abas: **Início**, **Controle**, **PC**, **Arquivos** e **Mais**. Não precisa de app Android para usar: o navegador do celular também funciona.
 
@@ -17,7 +17,7 @@ As imagens abaixo são capturas da interface atual renderizada em tamanho de cel
 <p align="center">
   <img src="docs/imagens/pc.png" width="240" alt="PC: atalhos de aplicativos e controles independentes de brilho dos monitores">
   <img src="docs/imagens/arquivos.png" width="240" alt="Arquivos: seleção de fotos e documentos para envio ao PC">
-  <img src="docs/imagens/mais.png" width="240" alt="Mais: áudio, envio de texto, captura de tela e status do PC">
+  <img src="docs/imagens/mais.png" width="240" alt="Mais: áudio, envio de texto, transmissão ao vivo e status do PC">
 </p>
 
 ## O que dá para fazer
@@ -28,7 +28,7 @@ As imagens abaixo são capturas da interface atual renderizada em tamanho de cel
 | **Controle** | Touchpad com cliques e rolagem; digitar texto no PC; Enter, Esc, apagar, setas, Tab e Espaço. |
 | **PC** | Atalhos de aplicativos e controles independentes de brilho real ou escurecimento por software. |
 | **Arquivos** | Enviar fotos, vídeos, áudio, documentos e arquivos compactados ao PC, com seleção múltipla e progresso por arquivo. |
-| **Mais** | Volume por programa, saída de áudio, copiar/colar texto no PC, captura de tela e uso de CPU, memória e disco. |
+| **Mais** | Volume por programa, saída de áudio, copiar/colar texto no PC, transmissão ao vivo e uso de CPU, memória e disco. |
 
 A aba **PC** reúne os controles dos monitores e os atalhos de aplicativos, reduzindo a rolagem em **Mais**.
 
@@ -40,14 +40,26 @@ Os atalhos atuais incluem YouTube, Spotify, Discord, Firefox, Steam, Valorant, C
 Celular (navegador ou app Android)
               |
          Wi-Fi local
-       POST + autenticação
+       POST e WebSocket autenticados
               |
-Servidor Flask no Windows — porta 5000
+Servidor FastAPI e Flask no Windows — porta 5000
               |
    Ações no PC / arquivos recebidos
 ```
 
 O app Android abre a interface servida pelo próprio PC. As mudanças no HTML aparecem após recarregar a página; recursos nativos, como o seletor de arquivos, precisam de um APK atualizado.
+
+## Transmissão ao vivo
+
+Em **Mais → Tela do PC**, toque em **Abrir tela ao vivo**. A transmissão abre em tela cheia com o monitor inteiro visível. Use as setas à direita para rolar ou escolha **⋯ → Preencher tela** para ocupar a área disponível com a imagem, com possível corte nas bordas.
+
+Deslize para mover o cursor e toque para clicar onde ele estiver. No menu **⋯**, você pode alternar para toque direto, armar o clique direito ou abrir o teclado. O teclado pode aparecer automaticamente quando o Windows detecta um cursor de texto. O modo imersivo que oculta as barras do Android exige o APK atualizado.
+
+A captura usa o monitor principal, com até 1920 pixels no lado maior e até 20 quadros por segundo. O envio de quadros e o recebimento dos comandos do cursor rodam em paralelo.
+
+<p align="center">
+  <img src="docs/imagens/transmissao.png" width="800" alt="Transmissão ao vivo em paisagem, com setas de rolagem na lateral">
+</p>
 
 ## Requisitos
 
@@ -56,7 +68,7 @@ O app Android abre a interface servida pelo próprio PC. As mudanças no HTML ap
 - Celular e PC na mesma rede Wi-Fi.
 - Para gerar o app: Android Studio, SDK 34 e um JDK compatível com Gradle 8.7; o projeto foi compilado com JDK 21 e código Java 17.
 
-Dependências do servidor: Flask, pynput, psutil, Pillow, pyperclip e `pycaw==20240210`. A versão do pycaw é fixa porque a API de áudio muda nas versões mais recentes.
+Dependências do servidor: Flask, pynput, psutil, Pillow, pyperclip e `pycaw==20240210`. Para a transmissão, o servidor também usa FastAPI, Uvicorn, WebSockets, a2wsgi e MSS. A versão do pycaw é fixa porque a API de áudio muda nas versões mais recentes.
 
 ## Rodar no PC
 
@@ -189,14 +201,13 @@ APKs e pastas de build não entram no código-fonte. Binários distribuídos pod
 
 ## Segurança e limites
 
-- As ações usam POST e passam pela proteção de rede local e autenticação por `X-Token`.
+- As ações HTTP usam POST com proteção de rede local e autenticação por `X-Token`. A transmissão usa WebSocket com um bilhete de sessão de uso único, emitido por uma rota POST autenticada.
 - Cinco credenciais erradas bloqueiam o aparelho por um minuto.
 - Teclas, ações e programas a fechar são validados por listas no servidor.
 - O upload usa uma pasta fixa, extensões permitidas e limite de tamanho; o celular não escolhe um caminho no PC.
 - O tráfego usa HTTP, sem criptografia: use somente uma rede confiável. Quem tiver a credencial e acesso à rede pode controlar o PC.
 - O servidor escuta em `0.0.0.0:5000`. **Nunca exponha a porta 5000 na internet.** O código aceita a faixa do Tailscale, mas a configuração de acesso externo ainda precisa ser testada.
 - A captura de tela mostra o monitor principal. O Windows bloqueado pode impedir uma captura útil.
-- O servidor de desenvolvimento do Flask é usado para este projeto pessoal; não é uma implantação pública.
 - Wake-on-LAN em `servidor/ligar.py` continua experimental e precisa de outro aparelho ligado na rede para enviar o pacote.
 
 ## Estrutura
@@ -206,7 +217,7 @@ controle-pc-celular/
   README.md
   CHANGELOG.md
   AGENTS.md
-  servidor/        Flask, interface, configurações e scripts do Windows
+  servidor/        FastAPI, Flask, interface, configurações e scripts do Windows
   android/         Aplicativo WebView e seletor de arquivos
   docs/
     imagens/       Capturas da interface com dados de demonstração
@@ -231,7 +242,7 @@ Os testes de upload extraem as rotas do código sem iniciar o controle do PC nem
 
 | Alteração | O que fazer para carregar |
 | --- | --- |
-| `servidor/app.py` | Reiniciar o servidor. |
+| `servidor/app.py` ou `servidor/desktop.py` | Reiniciar o servidor. |
 | `index.html`, `atalhos.json` ou `modos.json` | Recarregar a página ou reabrir o app. |
 | Código em `android/` | Gerar e instalar um APK novo. |
 

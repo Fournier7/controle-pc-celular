@@ -1,4 +1,5 @@
 import asyncio
+import faulthandler
 import base64
 import hmac
 import io
@@ -12,7 +13,6 @@ import threading
 import time
 from pathlib import Path
 
-from ctypes import POINTER, cast
 
 import comtypes
 import psutil
@@ -161,7 +161,11 @@ def mouse_rota():
         dx, dy = d["mover"]
         mouse_ctl.move(int(dx), int(dy))
     elif "rolar" in d:
-        mouse_ctl.scroll(0, int(d["rolar"]))
+        passos = d["rolar"]
+        if type(passos) not in (int, float) or not -120 <= passos <= 120:
+            return jsonify(msg="Rolagem inválida"), 400
+        # O pynput converte frações de passo em deltas menores no Windows.
+        mouse_ctl.scroll(0, passos)
     elif d.get("clique") == "duplo":
         mouse_ctl.click(Button.left, 2)
     elif d.get("clique") in ("esquerdo", "direito"):
@@ -173,14 +177,17 @@ def mouse_rota():
 def volume_rota():
     nivel = (request.get_json(silent=True) or {}).get("nivel")
     comtypes.CoInitialize()
+    dispositivo = iface = v = None
     try:
         dispositivo = AudioUtilities.GetSpeakers()
         iface = dispositivo.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        v = cast(iface, POINTER(IAudioEndpointVolume))
+        v = iface.QueryInterface(IAudioEndpointVolume)
         if nivel is not None:
             v.SetMasterVolumeLevelScalar(max(0, min(100, int(nivel))) / 100, None)
         atual = round(v.GetMasterVolumeLevelScalar() * 100)
     finally:
+        # Solta as interfaces antes de encerrar o COM nesta thread.
+        del v, iface, dispositivo
         comtypes.CoUninitialize()
     return jsonify(msg=f"Volume {atual}%", nivel=atual)
 
@@ -355,13 +362,14 @@ def volume_do_microfone():
             IMMDeviceEnumerator, comtypes.CLSCTX_INPROC_SERVER)
         dispositivo = enumerador.GetDefaultAudioEndpoint(1, 1)  # 1 = captura
     iface = dispositivo.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-    return cast(iface, POINTER(IAudioEndpointVolume))
+    return iface.QueryInterface(IAudioEndpointVolume)
 
 
 @app.post("/api/microfone")
 def microfone():
     acao = (request.get_json(silent=True) or {}).get("acao", "estado")
     comtypes.CoInitialize()
+    v = None
     try:
         v = volume_do_microfone()
         if acao == "alternar":
@@ -370,6 +378,7 @@ def microfone():
     except Exception:
         return jsonify(msg="Não achei o microfone padrão do Windows"), 500
     finally:
+        del v
         comtypes.CoUninitialize()
     return jsonify(msg="Microfone mutado" if mudo else "Microfone ligado", mudo=mudo)
 
@@ -423,6 +432,7 @@ def nome_da_sessao(s):
 def apps_audio():
     d = request.get_json(silent=True) or {}
     comtypes.CoInitialize()
+    sessoes = s = None
     try:
         sessoes = [(nome_da_sessao(s), s) for s in AudioUtilities.GetAllSessions()]
         sessoes = [(n, s) for n, s in sessoes if n]
@@ -435,6 +445,7 @@ def apps_audio():
     except Exception:
         return jsonify(msg="Não consegui ler os programas de áudio"), 500
     finally:
+        del s, sessoes
         comtypes.CoUninitialize()
     return jsonify(itens=[{"nome": n, "nivel": v} for n, v in sorted(itens.items())])
 
@@ -448,11 +459,14 @@ def abrir_alvo(alvo):
 
 def definir_volume(nivel):
     comtypes.CoInitialize()
+    iface = v = None
     try:
         iface = AudioUtilities.GetSpeakers().Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
-        cast(iface, POINTER(IAudioEndpointVolume)).SetMasterVolumeLevelScalar(
+        v = iface.QueryInterface(IAudioEndpointVolume)
+        v.SetMasterVolumeLevelScalar(
             max(0, min(100, int(nivel))) / 100, None)
     finally:
+        del v, iface
         comtypes.CoUninitialize()
 
 
@@ -749,6 +763,9 @@ def garantir_instancia_unica():
 
 
 if __name__ == "__main__":
+    # Mantém o arquivo aberto para registrar falhas de código nativo do Windows.
+    registro_falhas_nativas = (BASE / "falhas-nativas.log").open("a", encoding="utf-8")
+    faulthandler.enable(file=registro_falhas_nativas, all_threads=True)
     instancia_servidor = garantir_instancia_unica()
     if instancia_servidor is None:
         print("O servidor já está em execução. Para atualizar, use parar.bat antes de iniciar.bat.")
@@ -757,4 +774,5 @@ if __name__ == "__main__":
     print(f"Token: {TOKEN}\n")
     # Prepara os atalhos da Store sem atrasar a abertura do servidor.
     threading.Thread(target=carregar_apps_uwp, daemon=True).start()
-    app.run(host="0.0.0.0", port=PORTA)
+    from desktop import executar
+    executar(app, PORTA)

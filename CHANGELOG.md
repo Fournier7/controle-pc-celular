@@ -1,5 +1,14 @@
 # Histórico de mudanças
 
+## 2026-11-11
+
+- Tela ao vivo com toque direto ou touchpad, clique direito, teclado e setas de rolagem na lateral.
+- A transmissão abre em tela cheia com o monitor inteiro visível e oferece **Preencher tela** no menu.
+- Captura JPEG com até 1920 pixels no lado maior e processamento do cursor em paralelo com o vídeo.
+- APK com tela cheia imersiva e suporte ao teclado da transmissão.
+- Rolagem mais suave no touchpad da aba Controle, ajustes na estabilidade do áudio e correção do iniciador oculto.
+- README e capturas atualizados.
+
 ## 2026-11-02
 
 ### Monitores, aba PC e preset Filme
